@@ -157,12 +157,14 @@ export default async function ShiftsSpPage({
                   background: isToday ? "#fffbe6" : "#fff",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: "bold", color: dateColor }}>
+                <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "0.35rem" }}>
+                  <span style={{ fontWeight: "bold", color: dateColor, flexShrink: 0 }}>
                     {day.getUTCDate()}日（{WEEKDAY_LABEL_JA[weekday]}）
                   </span>
-                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
-                    {staffId && dayHours > 0 && <span style={{ fontSize: "0.8rem", color: "#666" }}>{dayHours.toFixed(1)}時間</span>}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
+                    {staffId && dayHours > 0 && (
+                      <span style={{ fontSize: "0.8rem", color: "#666", whiteSpace: "nowrap" }}>{dayHours.toFixed(1)}時間</span>
+                    )}
                     {canWrite && (
                       <>
                         <AddShiftDialog
@@ -171,14 +173,14 @@ export default async function ShiftsSpPage({
                           staffList={staffList}
                           defaultStoreId={storeIds.length === 1 ? storeIds[0] : undefined}
                           action={createShift}
-                          label={<span style={{ fontSize: "0.8rem", color: "#0969da" }}>＋ シフト</span>}
+                          label={<span style={{ fontSize: "0.8rem", color: "#0969da", whiteSpace: "nowrap" }}>＋ シフト</span>}
                         />
                         {storeIds.length === 1 && (
                           <AddEventDialog
                             date={key}
                             stores={selectedStores}
                             action={createEvent}
-                            label={<span style={{ fontSize: "0.8rem", color: "#0969da" }}>＋ イベント</span>}
+                            label={<span style={{ fontSize: "0.8rem", color: "#0969da", whiteSpace: "nowrap" }}>＋ イベント</span>}
                           />
                         )}
                       </>

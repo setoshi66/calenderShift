@@ -132,24 +132,24 @@ export default async function CalendarSpPage({
                   scrollMarginTop: "1rem",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <span style={{ fontWeight: "bold", color: dateColor }}>
+                <div style={{ display: "flex", flexWrap: "wrap", justifyContent: "space-between", alignItems: "center", gap: "0.35rem" }}>
+                  <span style={{ fontWeight: "bold", color: dateColor, flexShrink: 0 }}>
                     {day.getUTCDate()}日（{WEEKDAY_LABEL_JA[weekday]}）
                   </span>
                   {canWrite && (
-                    <div style={{ display: "flex", gap: "0.75rem" }}>
+                    <div style={{ display: "flex", gap: "0.75rem", flexShrink: 0 }}>
                       <AddShiftDialog
                         date={key}
                         stores={stores}
                         staffList={staffList}
                         action={createShift}
-                        label={<span style={{ fontSize: "0.8rem", color: "#0969da" }}>＋ シフト</span>}
+                        label={<span style={{ fontSize: "0.8rem", color: "#0969da", whiteSpace: "nowrap" }}>＋ シフト</span>}
                       />
                       <AddEventDialog
                         date={key}
                         stores={stores}
                         action={createEvent}
-                        label={<span style={{ fontSize: "0.8rem", color: "#0969da" }}>＋ イベント</span>}
+                        label={<span style={{ fontSize: "0.8rem", color: "#0969da", whiteSpace: "nowrap" }}>＋ イベント</span>}
                       />
                     </div>
                   )}
