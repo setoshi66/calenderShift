@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { appendStoreIdsToParams } from "@/lib/array";
+import { setStoredStoreIds } from "@/lib/store-filter-actions";
 
 type Option = { id: string; name: string; color: string };
 
@@ -26,6 +27,7 @@ export function StoreFilterChips({
     const next = storeIds.includes(id) ? storeIds.filter((x) => x !== id) : [...storeIds, id];
     const q = new URLSearchParams({ year: String(year), month: String(month), ...extraParams });
     appendStoreIdsToParams(q, next);
+    setStoredStoreIds(next);
     router.push(`${basePath}?${q.toString()}`);
   }
 

@@ -11,6 +11,7 @@ import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { addDays, formatDate, jstDateKey, shiftHours, todayInJst, WEEKDAY_LABEL_JA } from "@/lib/date";
 import { appendStoreIdsToParams, resolveStoreIds } from "@/lib/array";
 import { getViewMode } from "@/lib/view-mode";
+import { getStoredStoreIds } from "@/lib/store-filter";
 import { createShift, deleteShift, updateShift } from "./actions";
 import { createEvent, deleteEvent, updateEvent } from "@/app/events/actions";
 
@@ -36,8 +37,11 @@ export default async function ShiftsPage({
   const month = Number(params.month) || today.getUTCMonth() + 1; // 1-12
   const staffId = params.staffId || undefined;
 
-  const stores = await prisma.store.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
-  const storeIds = resolveStoreIds(params.storeId, stores.map((s) => s.id));
+  const [stores, storedStoreIds] = await Promise.all([
+    prisma.store.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+    getStoredStoreIds(),
+  ]);
+  const storeIds = resolveStoreIds(params.storeId, storedStoreIds, stores.map((s) => s.id));
   const showStoreName = storeIds.length !== 1;
 
   const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
