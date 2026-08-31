@@ -9,7 +9,7 @@ import { ShiftBadge } from "@/components/shift-badge";
 import { StoreFilterChips } from "@/components/store-filter-chips";
 import { addDays, formatDate, jstDateKey, shiftHours, todayInJst, WEEKDAY_LABEL_JA } from "@/lib/date";
 import { toArray } from "@/lib/array";
-import { createShift, deleteShift, updateShiftStatus } from "./actions";
+import { createShift, deleteShift, updateShift } from "./actions";
 import { createEvent, deleteEvent, updateEvent } from "@/app/events/actions";
 
 function monthLink(year: number, month: number, storeIds: string[], staffId: string | undefined) {
@@ -42,7 +42,7 @@ export default async function ShiftsPage({
     days.push(d);
   }
 
-  const [staffList, shifts, stores, storeEvents] = await Promise.all([
+  const [staffList, allStaff, shifts, stores, storeEvents] = await Promise.all([
     prisma.staff.findMany({
       where: {
         isActive: true,
@@ -51,6 +51,7 @@ export default async function ShiftsPage({
       },
       orderBy: { name: "asc" },
     }),
+    prisma.staff.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
     prisma.shift.findMany({
       where: {
         storeId: storeIds.length ? { in: storeIds } : undefined,
@@ -312,14 +313,21 @@ export default async function ShiftsPage({
                                   key={shift.id}
                                   shift={{
                                     id: shift.id,
+                                    staffId: shift.staffId,
+                                    storeId: shift.storeId,
+                                    workDate: formatDate(shift.workDate),
                                     startTime: shift.startTime,
                                     endTime: shift.endTime,
+                                    breakMinutes: shift.breakMinutes,
                                     status: shift.status,
+                                    note: shift.note,
                                     storeName: shift.store.name,
                                     storeColor: shift.store.color,
                                   }}
+                                  stores={stores}
+                                  staffList={allStaff}
                                   showStore={showStoreName}
-                                  updateStatusAction={updateShiftStatus}
+                                  updateAction={updateShift}
                                   deleteAction={deleteShift}
                                 />
                               ));

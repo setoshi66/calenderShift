@@ -3,28 +3,34 @@
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
-const STATUS_LABEL: Record<string, string> = {
-  DRAFT: "下書き",
-  CONFIRMED: "確定",
-  CANCELLED: "取消",
-};
+type Option = { id: string; name: string };
 
 export function ShiftBadge({
   shift,
+  stores,
+  staffList,
   showStore,
-  updateStatusAction,
+  updateAction,
   deleteAction,
 }: {
   shift: {
     id: string;
+    staffId: string;
+    storeId: string;
+    workDate: string; // "YYYY-MM-DD"
     startTime: string;
     endTime: string;
+    breakMinutes: number;
     status: string;
+    note: string | null;
     storeName: string;
     storeColor: string;
+    staffName?: string;
   };
+  stores: Option[];
+  staffList: Option[];
   showStore: boolean;
-  updateStatusAction: (formData: FormData) => Promise<void>;
+  updateAction: (formData: FormData) => Promise<void>;
   deleteAction: (formData: FormData) => Promise<void>;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
@@ -40,17 +46,31 @@ export function ShiftBadge({
     dialogRef.current?.close();
   }
 
-  function runAction(action: (formData: FormData) => Promise<void>, extra?: Record<string, string>) {
-    const formData = new FormData();
-    formData.set("id", shift.id);
-    for (const [k, v] of Object.entries(extra ?? {})) formData.set(k, v);
+  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
     startTransition(async () => {
       try {
-        await action(formData);
+        await updateAction(formData);
         close();
         router.refresh();
       } catch (err) {
-        setError(err instanceof Error ? err.message : "操作に失敗しました");
+        setError(err instanceof Error ? err.message : "更新に失敗しました");
+      }
+    });
+  }
+
+  function handleDelete() {
+    if (!confirm("このシフトを削除しますか？")) return;
+    const formData = new FormData();
+    formData.set("id", shift.id);
+    startTransition(async () => {
+      try {
+        await deleteAction(formData);
+        close();
+        router.refresh();
+      } catch (err) {
+        setError(err instanceof Error ? err.message : "削除に失敗しました");
       }
     });
   }
@@ -60,7 +80,7 @@ export function ShiftBadge({
       <button
         type="button"
         onClick={open}
-        title={`${showStore ? shift.storeName + " / " : ""}${shift.startTime}-${shift.endTime} / ${STATUS_LABEL[shift.status] ?? shift.status}`}
+        title={`${showStore ? shift.storeName + " / " : ""}${shift.startTime}-${shift.endTime}`}
         style={{
           display: "block",
           width: "100%",
@@ -81,6 +101,7 @@ export function ShiftBadge({
         }}
       >
         {shift.startTime}
+        {shift.staffName ? ` ${shift.staffName}` : ""}
         {showStore ? `(${shift.storeName[0]})` : ""}
       </button>
       <dialog
@@ -90,31 +111,74 @@ export function ShiftBadge({
         }}
         style={{ borderRadius: 8, border: "1px solid #ccc", padding: "1.25rem" }}
       >
-        <div style={{ display: "grid", gap: "0.6rem", minWidth: 240 }}>
-          <h3 style={{ margin: 0 }}>
-            {shift.storeName} {shift.startTime}-{shift.endTime}
-          </h3>
-          <p style={{ margin: 0 }}>状態: {STATUS_LABEL[shift.status] ?? shift.status}</p>
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.6rem", minWidth: 280 }}>
+          <h3 style={{ margin: 0 }}>シフトを編集</h3>
+          <input type="hidden" name="id" value={shift.id} />
+          <label>
+            店舗 *
+            <select name="storeId" required defaultValue={shift.storeId} style={{ width: "100%" }}>
+              {stores.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            スタッフ *
+            <select name="staffId" required defaultValue={shift.staffId} style={{ width: "100%" }}>
+              {staffList.map((s) => (
+                <option key={s.id} value={s.id}>
+                  {s.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            日付 *
+            <input type="date" name="workDate" required defaultValue={shift.workDate} style={{ width: "100%" }} />
+          </label>
+          <div style={{ display: "flex", gap: "0.5rem" }}>
+            <label style={{ flex: 1 }}>
+              開始 *
+              <input type="time" name="startTime" required defaultValue={shift.startTime} style={{ width: "100%" }} />
+            </label>
+            <label style={{ flex: 1 }}>
+              終了 *
+              <input type="time" name="endTime" required defaultValue={shift.endTime} style={{ width: "100%" }} />
+            </label>
+          </div>
+          <label>
+            休憩（分）
+            <input type="number" name="breakMinutes" min={0} defaultValue={shift.breakMinutes} style={{ width: "100%" }} />
+          </label>
+          <label>
+            状態
+            <select name="status" defaultValue={shift.status} style={{ width: "100%" }}>
+              <option value="DRAFT">下書き</option>
+              <option value="CONFIRMED">確定（Googleカレンダーへ即反映）</option>
+              <option value="CANCELLED">取消</option>
+            </select>
+          </label>
+          <label>
+            メモ
+            <input type="text" name="note" defaultValue={shift.note ?? ""} style={{ width: "100%" }} />
+          </label>
           {error && <p style={{ color: "red", margin: 0 }}>{error}</p>}
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            {shift.status !== "CONFIRMED" && (
-              <button type="button" disabled={isPending} onClick={() => runAction(updateStatusAction, { status: "CONFIRMED" })}>
-                確定
-              </button>
-            )}
-            {shift.status !== "CANCELLED" && (
-              <button type="button" disabled={isPending} onClick={() => runAction(updateStatusAction, { status: "CANCELLED" })}>
-                取消
-              </button>
-            )}
-            <button type="button" disabled={isPending} onClick={() => runAction(deleteAction)}>
+          <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem" }}>
+            <button type="button" onClick={handleDelete} disabled={isPending}>
               削除
             </button>
-            <button type="button" onClick={close}>
-              閉じる
-            </button>
+            <div style={{ display: "flex", gap: "0.5rem" }}>
+              <button type="button" onClick={close}>
+                キャンセル
+              </button>
+              <button type="submit" disabled={isPending}>
+                {isPending ? "保存中..." : "保存"}
+              </button>
+            </div>
           </div>
-        </div>
+        </form>
       </dialog>
     </>
   );

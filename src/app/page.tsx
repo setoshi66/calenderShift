@@ -5,10 +5,11 @@ import { Nav } from "@/components/nav";
 import { AddShiftDialog } from "@/components/add-shift-dialog";
 import { AddEventDialog } from "@/components/add-event-dialog";
 import { EditEventDialog } from "@/components/edit-event-dialog";
+import { ShiftBadge } from "@/components/shift-badge";
 import { StoreFilterChips } from "@/components/store-filter-chips";
 import { addDays, formatDate, jstDateKey, todayInJst, WEEKDAY_LABEL_JA } from "@/lib/date";
 import { toArray } from "@/lib/array";
-import { createShift } from "@/app/shifts/actions";
+import { createShift, deleteShift, updateShift } from "@/app/shifts/actions";
 import { createEvent, deleteEvent, updateEvent } from "@/app/events/actions";
 
 function monthLink(year: number, month: number, storeIds: string[]) {
@@ -195,26 +196,28 @@ export default async function DashboardPage({
                   </div>
                 ))}
                 {dayShifts.map((shift) => (
-                  <div
+                  <ShiftBadge
                     key={shift.id}
-                    style={{
-                      fontSize: "0.85rem",
-                      marginBottom: "0.15rem",
-                      background: shift.store.color,
-                      color: "#fff",
-                      padding: "0.05rem 0.3rem",
-                      borderRadius: 3,
-                      opacity: shift.status === "CANCELLED" ? 0.55 : shift.status === "DRAFT" ? 0.75 : 1,
-                      textDecoration: shift.status === "CANCELLED" ? "line-through" : "none",
-                      whiteSpace: "nowrap",
-                      overflow: "hidden",
-                      textOverflow: "ellipsis",
+                    shift={{
+                      id: shift.id,
+                      staffId: shift.staffId,
+                      storeId: shift.storeId,
+                      workDate: formatDate(shift.workDate),
+                      startTime: shift.startTime,
+                      endTime: shift.endTime,
+                      breakMinutes: shift.breakMinutes,
+                      status: shift.status,
+                      note: shift.note,
+                      storeName: shift.store.name,
+                      storeColor: shift.store.color,
+                      staffName: shift.staff.name,
                     }}
-                    title={`${shift.store.name} / ${shift.staff.name} / ${shift.startTime}-${shift.endTime}`}
-                  >
-                    {shift.startTime} {shift.staff.name}
-                    {showStoreName && `(${shift.store.name[0]})`}
-                  </div>
+                    stores={stores}
+                    staffList={staffList}
+                    showStore={showStoreName}
+                    updateAction={updateShift}
+                    deleteAction={deleteShift}
+                  />
                 ))}
               </div>
             );

@@ -44,17 +44,32 @@ export async function createShift(formData: FormData) {
   }
 
   revalidatePath("/shifts");
+  revalidatePath("/shifts/sp");
   revalidatePath("/");
+  revalidatePath("/sp");
 }
 
-export async function updateShiftStatus(formData: FormData) {
+export async function updateShift(formData: FormData) {
   await assertWriteAccess();
 
   const id = String(formData.get("id") ?? "");
-  const status = String(formData.get("status") ?? "") as "DRAFT" | "CONFIRMED" | "CANCELLED";
-  if (!id || !status) throw new Error("パラメータが不正です");
+  const staffId = String(formData.get("staffId") ?? "");
+  const storeId = String(formData.get("storeId") ?? "");
+  const workDate = String(formData.get("workDate") ?? "");
+  const startTime = String(formData.get("startTime") ?? "");
+  const endTime = String(formData.get("endTime") ?? "");
+  const status = String(formData.get("status") ?? "CONFIRMED") as "DRAFT" | "CONFIRMED" | "CANCELLED";
+  const breakMinutes = Number(formData.get("breakMinutes") ?? 0) || 0;
+  const note = String(formData.get("note") ?? "").trim() || null;
 
-  const shift = await prisma.shift.update({ where: { id }, data: { status } });
+  if (!id || !staffId || !storeId || !workDate || !startTime || !endTime) {
+    throw new Error("必須項目が未入力です");
+  }
+
+  await prisma.shift.update({
+    where: { id },
+    data: { staffId, storeId, workDate: new Date(workDate), startTime, endTime, status, breakMinutes, note },
+  });
 
   try {
     if (status === "CONFIRMED") {
@@ -66,9 +81,10 @@ export async function updateShiftStatus(formData: FormData) {
     // 同期失敗はgoogle_calendar_syncsに記録済み
   }
 
-  void shift;
   revalidatePath("/shifts");
+  revalidatePath("/shifts/sp");
   revalidatePath("/");
+  revalidatePath("/sp");
 }
 
 export async function deleteShift(formData: FormData) {
@@ -85,5 +101,7 @@ export async function deleteShift(formData: FormData) {
   await prisma.shift.delete({ where: { id } });
 
   revalidatePath("/shifts");
+  revalidatePath("/shifts/sp");
   revalidatePath("/");
+  revalidatePath("/sp");
 }

@@ -10,7 +10,7 @@ import { StoreFilterChips } from "@/components/store-filter-chips";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { addDays, formatDate, jstDateKey, shiftHours, todayInJst, WEEKDAY_LABEL_JA } from "@/lib/date";
 import { toArray } from "@/lib/array";
-import { createShift, deleteShift, updateShiftStatus } from "../actions";
+import { createShift, deleteShift, updateShift } from "../actions";
 import { createEvent, deleteEvent, updateEvent } from "@/app/events/actions";
 
 function monthLink(year: number, month: number, storeIds: string[], staffId: string | undefined) {
@@ -219,14 +219,21 @@ export default async function ShiftsSpPage({
                       key={shift.id}
                       shift={{
                         id: shift.id,
+                        staffId: shift.staffId,
+                        storeId: shift.storeId,
+                        workDate: formatDate(shift.workDate),
                         startTime: shift.startTime,
                         endTime: shift.endTime,
+                        breakMinutes: shift.breakMinutes,
                         status: shift.status,
+                        note: shift.note,
                         storeName: shift.store.name,
                         storeColor: shift.store.color,
                       }}
+                      stores={stores}
+                      staffList={staffList}
                       showStore={showStoreName}
-                      updateStatusAction={updateShiftStatus}
+                      updateAction={updateShift}
                       deleteAction={deleteShift}
                     />
                   ))}
