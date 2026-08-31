@@ -5,7 +5,7 @@ import { Nav } from "@/components/nav";
 import { StoreFilterChips } from "@/components/store-filter-chips";
 import { thStyle, tdStyle } from "@/lib/table-styles";
 import { addDays, formatDate, jstDateKey, todayInJst, WEEKDAY_LABEL_JA } from "@/lib/date";
-import { toArray } from "@/lib/array";
+import { appendStoreIdsToParams, resolveStoreIds } from "@/lib/array";
 import { getViewMode } from "@/lib/view-mode";
 import { bulkUpsertSales, deleteSales } from "./actions";
 
@@ -15,7 +15,7 @@ function yen(n: number) {
 
 function monthLink(year: number, month: number, storeIds: string[]) {
   const q = new URLSearchParams({ year: String(year), month: String(month) });
-  storeIds.forEach((id) => q.append("storeId", id));
+  appendStoreIdsToParams(q, storeIds);
   return `/sales?${q.toString()}`;
 }
 
@@ -32,23 +32,24 @@ export default async function SalesPage({
 
   const year = Number(params.year) || today.getUTCFullYear();
   const month = Number(params.month) || today.getUTCMonth() + 1; // 1-12
-  const storeIds = toArray(params.storeId);
+
+  const stores = await prisma.store.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+  const storeIds = resolveStoreIds(params.storeId, stores.map((s) => s.id));
   const showStoreName = storeIds.length !== 1;
 
   const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
   const lastOfMonth = new Date(Date.UTC(year, month, 0));
   const singleStoreId = storeIds.length === 1 ? storeIds[0] : undefined;
 
-  const [sales, stores, gridShifts, gridEvents] = await Promise.all([
+  const [sales, gridShifts, gridEvents] = await Promise.all([
     prisma.dailySales.findMany({
       where: {
-        storeId: storeIds.length ? { in: storeIds } : undefined,
+        storeId: { in: storeIds },
         date: { gte: firstOfMonth, lte: lastOfMonth },
       },
       include: { store: true },
       orderBy: [{ date: "asc" }, { storeId: "asc" }],
     }),
-    prisma.store.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
     singleStoreId
       ? prisma.shift.findMany({
           where: { storeId: singleStoreId, workDate: { gte: firstOfMonth, lte: lastOfMonth } },

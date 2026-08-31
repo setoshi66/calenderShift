@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { appendStoreIdsToParams } from "@/lib/array";
 
 export function AutoSubmitSelect({
   name,
@@ -26,7 +27,7 @@ export function AutoSubmitSelect({
       defaultValue={value}
       onChange={(e) => {
         const q = new URLSearchParams(extraParams);
-        (storeIds ?? []).forEach((id) => q.append("storeId", id));
+        if (storeIds) appendStoreIdsToParams(q, storeIds);
         if (e.target.value) q.set(name, e.target.value);
         router.push(`${basePath}?${q.toString()}`);
       }}

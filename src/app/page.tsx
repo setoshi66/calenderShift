@@ -8,14 +8,14 @@ import { EditEventDialog } from "@/components/edit-event-dialog";
 import { ShiftBadge } from "@/components/shift-badge";
 import { StoreFilterChips } from "@/components/store-filter-chips";
 import { addDays, formatDate, jstDateKey, todayInJst, WEEKDAY_LABEL_JA } from "@/lib/date";
-import { toArray } from "@/lib/array";
+import { appendStoreIdsToParams, resolveStoreIds } from "@/lib/array";
 import { getViewMode } from "@/lib/view-mode";
 import { createShift, deleteShift, updateShift } from "@/app/shifts/actions";
 import { createEvent, deleteEvent, updateEvent } from "@/app/events/actions";
 
 function monthLink(year: number, month: number, storeIds: string[]) {
   const q = new URLSearchParams({ year: String(year), month: String(month) });
-  storeIds.forEach((id) => q.append("storeId", id));
+  appendStoreIdsToParams(q, storeIds);
   return `/?${q.toString()}`;
 }
 
@@ -32,7 +32,9 @@ export default async function DashboardPage({
 
   const year = Number(params.year) || today.getUTCFullYear();
   const month = Number(params.month) || today.getUTCMonth() + 1; // 1-12
-  const storeIds = toArray(params.storeId);
+
+  const stores = await prisma.store.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+  const storeIds = resolveStoreIds(params.storeId, stores.map((s) => s.id));
   const showStoreName = storeIds.length !== 1;
 
   const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
@@ -50,10 +52,10 @@ export default async function DashboardPage({
     days.push(d);
   }
 
-  const [shifts, events, stores, staffList] = await Promise.all([
+  const [shifts, events, staffList] = await Promise.all([
     prisma.shift.findMany({
       where: {
-        storeId: storeIds.length ? { in: storeIds } : undefined,
+        storeId: { in: storeIds },
         workDate: { gte: gridStart, lte: gridEnd },
       },
       include: { staff: true, store: true },
@@ -61,13 +63,12 @@ export default async function DashboardPage({
     }),
     prisma.storeEvent.findMany({
       where: {
-        storeId: storeIds.length ? { in: storeIds } : undefined,
+        storeId: { in: storeIds },
         startAt: { gte: addDays(gridStart, -1), lte: addDays(gridEnd, 1) },
       },
       include: { store: true },
       orderBy: [{ startAt: "asc" }],
     }),
-    prisma.store.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
     prisma.staff.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
   ]);
 

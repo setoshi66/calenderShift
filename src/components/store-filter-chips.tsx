@@ -1,6 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { appendStoreIdsToParams } from "@/lib/array";
 
 type Option = { id: string; name: string; color: string };
 
@@ -24,7 +25,7 @@ export function StoreFilterChips({
   function toggle(id: string) {
     const next = storeIds.includes(id) ? storeIds.filter((x) => x !== id) : [...storeIds, id];
     const q = new URLSearchParams({ year: String(year), month: String(month), ...extraParams });
-    next.forEach((sid) => q.append("storeId", sid));
+    appendStoreIdsToParams(q, next);
     router.push(`${basePath}?${q.toString()}`);
   }
 

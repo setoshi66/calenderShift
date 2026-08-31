@@ -9,14 +9,14 @@ import { ShiftBadge } from "@/components/shift-badge";
 import { StoreFilterChips } from "@/components/store-filter-chips";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
 import { addDays, formatDate, jstDateKey, shiftHours, todayInJst, WEEKDAY_LABEL_JA } from "@/lib/date";
-import { toArray } from "@/lib/array";
+import { appendStoreIdsToParams, resolveStoreIds } from "@/lib/array";
 import { getViewMode } from "@/lib/view-mode";
 import { createShift, deleteShift, updateShift } from "./actions";
 import { createEvent, deleteEvent, updateEvent } from "@/app/events/actions";
 
 function monthLink(year: number, month: number, storeIds: string[], staffId: string | undefined) {
   const q = new URLSearchParams({ year: String(year), month: String(month) });
-  storeIds.forEach((id) => q.append("storeId", id));
+  appendStoreIdsToParams(q, storeIds);
   if (staffId) q.set("staffId", staffId);
   return `/shifts?${q.toString()}`;
 }
@@ -34,9 +34,11 @@ export default async function ShiftsPage({
 
   const year = Number(params.year) || today.getUTCFullYear();
   const month = Number(params.month) || today.getUTCMonth() + 1; // 1-12
-  const storeIds = toArray(params.storeId);
-  const showStoreName = storeIds.length !== 1;
   const staffId = params.staffId || undefined;
+
+  const stores = await prisma.store.findMany({ where: { isActive: true }, orderBy: { name: "asc" } });
+  const storeIds = resolveStoreIds(params.storeId, stores.map((s) => s.id));
+  const showStoreName = storeIds.length !== 1;
 
   const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
   const lastOfMonth = new Date(Date.UTC(year, month, 0));
@@ -45,12 +47,12 @@ export default async function ShiftsPage({
     days.push(d);
   }
 
-  const [allStaff, columnStaff, shifts, stores, storeEvents] = await Promise.all([
+  const [allStaff, columnStaff, shifts, storeEvents] = await Promise.all([
     // 店舗のみで絞り込んだスタッフ一覧（絞り込みセレクトの選択肢・編集ダイアログのスタッフ選択に使用）
     prisma.staff.findMany({
       where: {
         isActive: true,
-        storeAssignments: storeIds.length ? { some: { storeId: { in: storeIds } } } : undefined,
+        storeAssignments: { some: { storeId: { in: storeIds } } },
       },
       orderBy: { name: "asc" },
     }),
@@ -59,23 +61,22 @@ export default async function ShiftsPage({
       where: {
         isActive: true,
         id: staffId,
-        storeAssignments: storeIds.length ? { some: { storeId: { in: storeIds } } } : undefined,
+        storeAssignments: { some: { storeId: { in: storeIds } } },
       },
       orderBy: { name: "asc" },
     }),
     prisma.shift.findMany({
       where: {
-        storeId: storeIds.length ? { in: storeIds } : undefined,
+        storeId: { in: storeIds },
         staffId,
         workDate: { gte: firstOfMonth, lte: lastOfMonth },
       },
       include: { store: true, staff: true },
       orderBy: { startTime: "asc" },
     }),
-    prisma.store.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
     prisma.storeEvent.findMany({
       where: {
-        storeId: storeIds.length ? { in: storeIds } : undefined,
+        storeId: { in: storeIds },
         startAt: { gte: addDays(firstOfMonth, -1), lte: addDays(lastOfMonth, 1) },
       },
       include: { store: true },
