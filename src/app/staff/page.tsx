@@ -27,10 +27,8 @@ export default async function StaffPage() {
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} viewMode={viewMode} />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="スタッフ" />
       <main style={{ padding: "2rem", maxWidth: 960, margin: "0 auto" }}>
-        <h1>スタッフ</h1>
-
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1.5rem" }}>
           <thead>
             <tr>

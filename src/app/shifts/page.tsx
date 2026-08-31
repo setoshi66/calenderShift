@@ -110,7 +110,7 @@ export default async function ShiftsPage({
   if (viewMode === "sp") {
     return (
       <>
-        <Nav userEmail={session?.user?.email} viewMode={viewMode} />
+        <Nav userEmail={session?.user?.email} viewMode={viewMode} title="シフト" />
         <main style={{ padding: "1rem", maxWidth: 480, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Link href={monthLink(prevMonth.year, prevMonth.month, storeIds, staffId)} style={{ fontSize: "1.4rem", padding: "0.4rem 0.7rem" }}>
@@ -197,6 +197,7 @@ export default async function ShiftsPage({
                             <AddEventDialog
                               date={key}
                               stores={selectedStores}
+                              defaultStoreId={storeIds[0]}
                               action={createEvent}
                               label={<span style={{ fontSize: "0.8rem", color: "#0969da", whiteSpace: "nowrap" }}>＋ イベント</span>}
                             />
@@ -272,10 +273,8 @@ export default async function ShiftsPage({
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} viewMode={viewMode} />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="シフト" />
       <main style={{ padding: "2rem", maxWidth: "100%", margin: "0 auto" }}>
-        <h1>シフト</h1>
-
         <div style={{ marginTop: "1rem" }}>
           <div style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>店舗</div>
           <StoreFilterChips
@@ -288,25 +287,17 @@ export default async function ShiftsPage({
           />
         </div>
 
-        <form method="get" style={{ display: "flex", gap: "0.75rem", alignItems: "end", marginTop: "0.75rem" }}>
-          <input type="hidden" name="year" value={year} />
-          <input type="hidden" name="month" value={month} />
-          {storeIds.map((id) => (
-            <input key={id} type="hidden" name="storeId" value={id} />
-          ))}
-          <label>
-            スタッフ
-            <select name="staffId" defaultValue={staffId ?? ""}>
-              <option value="">すべて</option>
-              {allStaff.map((staff) => (
-                <option key={staff.id} value={staff.id}>
-                  {staff.name}
-                </option>
-              ))}
-            </select>
-          </label>
-          <button type="submit">絞り込み</button>
-        </form>
+        <div style={{ marginTop: "0.75rem", maxWidth: 280 }}>
+          <AutoSubmitSelect
+            name="staffId"
+            value={staffId ?? ""}
+            options={allStaff}
+            allLabel="スタッフ: すべて"
+            basePath="/shifts"
+            extraParams={{ year: String(year), month: String(month) }}
+            storeIds={storeIds}
+          />
+        </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem" }}>
           <Link href={monthLink(prevMonth.year, prevMonth.month, storeIds, staffId)}>← 前の月</Link>
@@ -466,6 +457,7 @@ export default async function ShiftsPage({
                             <AddEventDialog
                               date={dayKey}
                               stores={selectedStores.length ? selectedStores : stores}
+                              defaultStoreId={storeIds.length === 1 ? storeIds[0] : undefined}
                               action={createEvent}
                             >
                               {eventBadges}

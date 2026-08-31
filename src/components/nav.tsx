@@ -14,7 +14,15 @@ const LINKS = [
   { href: "/staff", label: "スタッフ" },
 ];
 
-export function Nav({ userEmail, viewMode }: { userEmail?: string | null; viewMode: ViewMode }) {
+export function Nav({
+  userEmail,
+  viewMode,
+  title,
+}: {
+  userEmail?: string | null;
+  viewMode: ViewMode;
+  title?: string;
+}) {
   const [open, setOpen] = useState(false);
 
   return (
@@ -22,8 +30,8 @@ export function Nav({ userEmail, viewMode }: { userEmail?: string | null; viewMo
       style={{
         position: "relative",
         display: "flex",
-        justifyContent: "space-between",
         alignItems: "center",
+        gap: "0.75rem",
         padding: "0.75rem 2rem",
         borderBottom: "1px solid #ddd",
       }}
@@ -32,12 +40,29 @@ export function Nav({ userEmail, viewMode }: { userEmail?: string | null; viewMo
         type="button"
         onClick={() => setOpen((v) => !v)}
         aria-label="メニュー"
-        style={{ fontSize: "1.2rem", lineHeight: 1, padding: "0.25rem 0.6rem" }}
+        style={{ fontSize: "1.2rem", lineHeight: 1, padding: "0.25rem 0.6rem", flexShrink: 0 }}
       >
         ☰
       </button>
 
-      <ViewModeToggle mode={viewMode} />
+      {title && (
+        <strong
+          style={{
+            flex: 1,
+            textAlign: "center",
+            fontSize: "1rem",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+            whiteSpace: "nowrap",
+          }}
+        >
+          {title}
+        </strong>
+      )}
+
+      <div style={{ flexShrink: 0, marginLeft: title ? 0 : "auto" }}>
+        <ViewModeToggle mode={viewMode} />
+      </div>
 
       {open && (
         <>

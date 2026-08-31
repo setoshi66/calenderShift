@@ -8,12 +8,14 @@ type Option = { id: string; name: string };
 export function AddEventDialog({
   date,
   stores,
+  defaultStoreId,
   action,
   children,
   label,
 }: {
   date: string;
   stores: Option[];
+  defaultStoreId?: string;
   action: (formData: FormData) => Promise<void>;
   children?: ReactNode;
   label?: ReactNode;
@@ -111,7 +113,7 @@ export function AddEventDialog({
           <h3 style={{ margin: 0 }}>{date} のイベントを登録</h3>
           <label>
             店舗 *
-            <select name="storeId" required style={{ width: "100%" }}>
+            <select name="storeId" required defaultValue={defaultStoreId} style={{ width: "100%" }}>
               {stores.map((s) => (
                 <option key={s.id} value={s.id}>
                   {s.name}

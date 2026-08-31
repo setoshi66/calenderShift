@@ -90,7 +90,7 @@ export default async function DashboardPage({
   if (viewMode === "sp") {
     return (
       <>
-        <Nav userEmail={session?.user?.email} viewMode={viewMode} />
+        <Nav userEmail={session?.user?.email} viewMode={viewMode} title="カレンダー" />
         <main style={{ padding: "1rem", maxWidth: 480, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Link
@@ -159,6 +159,7 @@ export default async function DashboardPage({
                         <AddEventDialog
                           date={key}
                           stores={stores}
+                          defaultStoreId={storeIds.length === 1 ? storeIds[0] : undefined}
                           action={createEvent}
                           label={<span style={{ fontSize: "0.8rem", color: "#0969da", whiteSpace: "nowrap" }}>＋ イベント</span>}
                         />
@@ -241,7 +242,7 @@ export default async function DashboardPage({
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} viewMode={viewMode} />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="カレンダー" />
       <main style={{ padding: "2rem", maxWidth: 1200, margin: "0 auto" }}>
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
           <Link href={monthLink(prevMonth.year, prevMonth.month, storeIds)}>← 前の月</Link>
@@ -312,7 +313,12 @@ export default async function DashboardPage({
                         defaultStoreId={storeIds.length === 1 ? storeIds[0] : undefined}
                         action={createShift}
                       />
-                      <AddEventDialog date={key} stores={stores} action={createEvent} />
+                      <AddEventDialog
+                        date={key}
+                        stores={stores}
+                        defaultStoreId={storeIds.length === 1 ? storeIds[0] : undefined}
+                        action={createEvent}
+                      />
                     </div>
                   )}
                 </div>

@@ -6,6 +6,13 @@ import { utcToJstDatetimeLocal } from "@/lib/date";
 
 type Option = { id: string; name: string };
 
+const fieldCaptionStyle = {
+  display: "block",
+  fontSize: "0.8rem",
+  color: "#666",
+  marginBottom: "0.25rem",
+} as const;
+
 export function EditEventDialog({
   event,
   stores,
@@ -96,11 +103,11 @@ export function EditEventDialog({
         }}
         style={{ borderRadius: 8, border: "1px solid #ccc", padding: "1.25rem" }}
       >
-        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.6rem", minWidth: 280 }}>
-          <h3 style={{ margin: 0 }}>イベントを編集</h3>
+        <form onSubmit={handleSubmit} style={{ display: "grid", gap: "0.9rem", minWidth: 320 }}>
+          <h3 style={{ margin: 0, paddingBottom: "0.5rem", borderBottom: "1px solid #eee" }}>イベントを編集</h3>
           <input type="hidden" name="id" value={event.id} />
-          <label>
-            店舗 *
+          <label style={{ display: "block" }}>
+            <span style={fieldCaptionStyle}>店舗 *</span>
             <select name="storeId" required defaultValue={event.storeId} style={{ width: "100%" }}>
               {stores.map((s) => (
                 <option key={s.id} value={s.id}>
@@ -109,17 +116,13 @@ export function EditEventDialog({
               ))}
             </select>
           </label>
-          <label>
-            イベント名 *
+          <label style={{ display: "block" }}>
+            <span style={fieldCaptionStyle}>イベント名 *</span>
             <input type="text" name="name" required defaultValue={event.name} style={{ width: "100%" }} />
           </label>
-          <label>
-            主催
-            <input type="text" name="organizer" defaultValue={event.organizer ?? ""} style={{ width: "100%" }} />
-          </label>
-          <div style={{ display: "flex", gap: "0.5rem" }}>
-            <label style={{ flex: 1 }}>
-              開始 *
+          <div style={{ display: "flex", gap: "0.75rem" }}>
+            <label style={{ flex: 1, display: "block" }}>
+              <span style={fieldCaptionStyle}>開始 *</span>
               <input
                 type="datetime-local"
                 name="startAt"
@@ -128,8 +131,8 @@ export function EditEventDialog({
                 style={{ width: "100%" }}
               />
             </label>
-            <label style={{ flex: 1 }}>
-              終了 *
+            <label style={{ flex: 1, display: "block" }}>
+              <span style={fieldCaptionStyle}>終了 *</span>
               <input
                 type="datetime-local"
                 name="endAt"
@@ -139,8 +142,20 @@ export function EditEventDialog({
               />
             </label>
           </div>
+          <label style={{ display: "block" }}>
+            <span style={fieldCaptionStyle}>主催</span>
+            <input type="text" name="organizer" defaultValue={event.organizer ?? ""} style={{ width: "100%" }} />
+          </label>
           {error && <p style={{ color: "red", margin: 0 }}>{error}</p>}
-          <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem" }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              gap: "0.5rem",
+              paddingTop: "0.5rem",
+              borderTop: "1px solid #eee",
+            }}
+          >
             <button type="button" onClick={handleDelete} disabled={isPending}>
               削除
             </button>

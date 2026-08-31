@@ -16,10 +16,8 @@ export default async function StoresPage() {
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} viewMode={viewMode} />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="店舗" />
       <main style={{ padding: "2rem", maxWidth: 960, margin: "0 auto" }}>
-        <h1>店舗</h1>
-
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1.5rem" }}>
           <thead>
             <tr>
