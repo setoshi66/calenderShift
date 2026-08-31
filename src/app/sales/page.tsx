@@ -6,6 +6,7 @@ import { StoreFilterChips } from "@/components/store-filter-chips";
 import { thStyle, tdStyle } from "@/lib/table-styles";
 import { addDays, formatDate, jstDateKey, todayInJst, WEEKDAY_LABEL_JA } from "@/lib/date";
 import { toArray } from "@/lib/array";
+import { getViewMode } from "@/lib/view-mode";
 import { bulkUpsertSales, deleteSales } from "./actions";
 
 function yen(n: number) {
@@ -27,6 +28,7 @@ export default async function SalesPage({
   const session = await auth();
   const canWrite = session?.user.role === "ADMIN" || session?.user.role === "STORE_MANAGER";
   const today = todayInJst();
+  const viewMode = await getViewMode();
 
   const year = Number(params.year) || today.getUTCFullYear();
   const month = Number(params.month) || today.getUTCMonth() + 1; // 1-12
@@ -35,7 +37,6 @@ export default async function SalesPage({
 
   const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
   const lastOfMonth = new Date(Date.UTC(year, month, 0));
-
   const singleStoreId = storeIds.length === 1 ? storeIds[0] : undefined;
 
   const [sales, stores, gridShifts, gridEvents] = await Promise.all([
@@ -94,9 +95,155 @@ export default async function SalesPage({
     eventsByDate.set(key, [...(eventsByDate.get(key) ?? []), event]);
   }
 
+  if (viewMode === "sp") {
+    const fieldStyle = { width: "100%", padding: "0.4rem" };
+
+    return (
+      <>
+        <Nav userEmail={session?.user?.email} viewMode={viewMode} />
+        <main style={{ padding: "1rem", maxWidth: 480, margin: "0 auto" }}>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <Link href={monthLink(prevMonth.year, prevMonth.month, storeIds)} style={{ fontSize: "1.4rem", padding: "0.4rem 0.7rem" }}>
+              ‹
+            </Link>
+            <strong style={{ fontSize: "1.1rem" }}>
+              {year}年{month}月
+            </strong>
+            <Link href={monthLink(nextMonth.year, nextMonth.month, storeIds)} style={{ fontSize: "1.4rem", padding: "0.4rem 0.7rem" }}>
+              ›
+            </Link>
+          </div>
+
+          <div style={{ marginTop: "0.75rem" }}>
+            <div style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>
+              店舗（1店舗のみでExcel風の一括入力ができます）
+            </div>
+            <StoreFilterChips stores={stores} storeIds={storeIds} year={year} month={month} basePath="/sales" />
+          </div>
+
+          {storeIds.length === 1 && canWrite ? (
+            <form action={bulkUpsertSales} style={{ marginTop: "1rem" }}>
+              <input type="hidden" name="storeId" value={storeIds[0]} />
+              <input type="hidden" name="dates" value={days.map((d) => formatDate(d)).join(",")} />
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+                {days.map((day) => {
+                  const key = formatDate(day);
+                  const existing = salesByDate.get(key);
+                  const total = (existing?.cashAmount ?? 0) + (existing?.cardAmount ?? 0) + (existing?.otherAmount ?? 0);
+                  const dayEvents = eventsByDate.get(key) ?? [];
+                  const dayShifts = shiftsByDate.get(key) ?? [];
+                  const weekday = day.getUTCDay();
+                  const dateColor = weekday === 6 ? "#1a5fd6" : weekday === 0 ? "#d61a1a" : undefined;
+
+                  return (
+                    <div key={key} style={{ border: "1px solid #ddd", borderRadius: 8, padding: "0.75rem" }}>
+                      <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", color: dateColor }}>
+                        <span>
+                          {day.getUTCDate()}日（{WEEKDAY_LABEL_JA[weekday]}）
+                        </span>
+                        <span style={{ color: "#888", fontWeight: "normal" }}>合計 {yen(total)}</span>
+                      </div>
+
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <label style={{ fontSize: "0.8rem" }}>
+                          現金
+                          <input type="number" name={`cash_${key}`} min={0} defaultValue={existing?.cashAmount ?? 0} style={fieldStyle} />
+                        </label>
+                        <label style={{ fontSize: "0.8rem" }}>
+                          カード
+                          <input type="number" name={`card_${key}`} min={0} defaultValue={existing?.cardAmount ?? 0} style={fieldStyle} />
+                        </label>
+                        <label style={{ fontSize: "0.8rem" }}>
+                          その他
+                          <input type="number" name={`other_${key}`} min={0} defaultValue={existing?.otherAmount ?? 0} style={fieldStyle} />
+                        </label>
+                      </div>
+                      <label style={{ fontSize: "0.8rem", display: "block", marginTop: "0.5rem" }}>
+                        メモ
+                        <input type="text" name={`note_${key}`} defaultValue={existing?.note ?? ""} style={fieldStyle} />
+                      </label>
+
+                      {(dayEvents.length > 0 || dayShifts.length > 0) && (
+                        <div style={{ marginTop: "0.5rem", fontSize: "0.8rem", color: "#666" }}>
+                          {dayEvents.map((event) => (
+                            <div key={event.id}>📅 {event.name}</div>
+                          ))}
+                          {dayShifts.map((shift) => (
+                            <div key={shift.id}>
+                              {shift.startTime}-{shift.endTime} {shift.staff.name}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+
+              <div style={{ marginTop: "0.75rem", padding: "0.75rem", background: "#f5f5f5", borderRadius: 8 }}>
+                <div>現金合計: {yen(totals.cash)}</div>
+                <div>カード合計: {yen(totals.card)}</div>
+                <div>その他合計: {yen(totals.other)}</div>
+                <div style={{ fontWeight: "bold" }}>総合計: {yen(grandTotal)}</div>
+              </div>
+
+              <p style={{ fontSize: "0.8rem", color: "#666", marginTop: "0.5rem" }}>
+                金額・メモをすべて空（0）にして保存すると、その日のデータは削除されます。
+              </p>
+              <button type="submit" style={{ marginTop: "0.5rem", width: "100%", padding: "0.6rem" }}>
+                まとめて保存
+              </button>
+            </form>
+          ) : (
+            <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              {sales.length === 0 && (
+                <p style={{ color: "#888", fontSize: "0.9rem" }}>
+                  売上データはありません。1店舗のみを選択するとExcel風の一括入力ができます。
+                </p>
+              )}
+              {sales.map((s) => {
+                const total = s.cashAmount + s.cardAmount + s.otherAmount;
+                return (
+                  <div key={s.id} style={{ border: "1px solid #ddd", borderRadius: 8, padding: "0.75rem" }}>
+                    <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
+                      <span>
+                        {formatDate(s.date)}
+                        {showStoreName && ` (${s.store.name})`}
+                      </span>
+                      <span>{yen(total)}</span>
+                    </div>
+                    <div style={{ fontSize: "0.85rem", color: "#666", marginTop: "0.25rem" }}>
+                      現金 {yen(s.cashAmount)} / カード {yen(s.cardAmount)} / その他 {yen(s.otherAmount)}
+                    </div>
+                    {s.note && <div style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>{s.note}</div>}
+                    {canWrite && (
+                      <form action={deleteSales} style={{ marginTop: "0.5rem" }}>
+                        <input type="hidden" name="id" value={s.id} />
+                        <button type="submit">削除</button>
+                      </form>
+                    )}
+                  </div>
+                );
+              })}
+              {sales.length > 0 && (
+                <div style={{ padding: "0.75rem", background: "#f5f5f5", borderRadius: 8 }}>
+                  <div>現金合計: {yen(totals.cash)}</div>
+                  <div>カード合計: {yen(totals.card)}</div>
+                  <div>その他合計: {yen(totals.other)}</div>
+                  <div style={{ fontWeight: "bold" }}>総合計: {yen(grandTotal)}</div>
+                </div>
+              )}
+            </div>
+          )}
+        </main>
+      </>
+    );
+  }
+
   return (
     <>
-      <Nav userEmail={session?.user?.email} />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} />
       <main style={{ padding: "2rem", maxWidth: 1080, margin: "0 auto" }}>
         <h1>売上</h1>
 
@@ -177,30 +324,34 @@ export default async function SalesPage({
                           <input type="text" name={`note_${key}`} defaultValue={existing?.note ?? ""} style={{ width: "100%" }} />
                         </td>
                         <td style={{ ...tdStyle, minWidth: 140 }}>
-                          {dayEvents.length === 0
-                            ? <span style={{ color: "#bbb" }}>-</span>
-                            : dayEvents.map((event) => (
-                                <div
-                                  key={event.id}
-                                  style={{ fontSize: "0.85rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                                  title={event.name}
-                                >
-                                  📅 {event.name}
-                                </div>
-                              ))}
+                          {dayEvents.length === 0 ? (
+                            <span style={{ color: "#bbb" }}>-</span>
+                          ) : (
+                            dayEvents.map((event) => (
+                              <div
+                                key={event.id}
+                                style={{ fontSize: "0.85rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                                title={event.name}
+                              >
+                                📅 {event.name}
+                              </div>
+                            ))
+                          )}
                         </td>
                         <td style={{ ...tdStyle, minWidth: 140 }}>
-                          {dayShifts.length === 0
-                            ? <span style={{ color: "#bbb" }}>-</span>
-                            : dayShifts.map((shift) => (
-                                <div
-                                  key={shift.id}
-                                  style={{ fontSize: "0.85rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                                  title={`${shift.staff.name} ${shift.startTime}-${shift.endTime}`}
-                                >
-                                  {shift.startTime} {shift.staff.name}
-                                </div>
-                              ))}
+                          {dayShifts.length === 0 ? (
+                            <span style={{ color: "#bbb" }}>-</span>
+                          ) : (
+                            dayShifts.map((shift) => (
+                              <div
+                                key={shift.id}
+                                style={{ fontSize: "0.85rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                                title={`${shift.staff.name} ${shift.startTime}-${shift.endTime}`}
+                              >
+                                {shift.startTime} {shift.staff.name}
+                              </div>
+                            ))
+                          )}
                         </td>
                       </tr>
                     );

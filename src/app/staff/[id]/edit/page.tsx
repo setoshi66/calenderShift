@@ -2,15 +2,17 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Nav } from "@/components/nav";
+import { getViewMode } from "@/lib/view-mode";
 import { updateStaff } from "../../actions";
 
 export default async function EditStaffPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
 
-  const [staff, stores] = await Promise.all([
+  const [staff, stores, viewMode] = await Promise.all([
     prisma.staff.findUnique({ where: { id }, include: { storeAssignments: true } }),
     prisma.store.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+    getViewMode(),
   ]);
   if (!staff) notFound();
 
@@ -18,7 +20,7 @@ export default async function EditStaffPage({ params }: { params: Promise<{ id: 
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} />
       <main style={{ padding: "2rem", maxWidth: 480, margin: "0 auto" }}>
         <h1>スタッフを編集</h1>
         <form action={updateStaff} style={{ display: "grid", gap: "0.75rem", marginTop: "1.5rem" }}>

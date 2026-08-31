@@ -2,17 +2,18 @@ import { notFound } from "next/navigation";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Nav } from "@/components/nav";
+import { getViewMode } from "@/lib/view-mode";
 import { updateStore } from "../../actions";
 
 export default async function EditStorePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
-  const store = await prisma.store.findUnique({ where: { id } });
+  const [store, viewMode] = await Promise.all([prisma.store.findUnique({ where: { id } }), getViewMode()]);
   if (!store) notFound();
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} />
       <main style={{ padding: "2rem", maxWidth: 480, margin: "0 auto" }}>
         <h1>店舗を編集</h1>
         <form action={updateStore} style={{ display: "grid", gap: "0.75rem", marginTop: "1.5rem" }}>

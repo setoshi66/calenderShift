@@ -3,16 +3,20 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Nav } from "@/components/nav";
 import { thStyle, tdStyle } from "@/lib/table-styles";
+import { getViewMode } from "@/lib/view-mode";
 import { createStore, toggleStoreActive } from "./actions";
 
 export default async function StoresPage() {
   const session = await auth();
   const canWrite = session?.user.role === "ADMIN" || session?.user.role === "STORE_MANAGER";
-  const stores = await prisma.store.findMany({ orderBy: { name: "asc" } });
+  const [stores, viewMode] = await Promise.all([
+    prisma.store.findMany({ orderBy: { name: "asc" } }),
+    getViewMode(),
+  ]);
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} />
       <main style={{ padding: "2rem", maxWidth: 960, margin: "0 auto" }}>
         <h1>店舗</h1>
 

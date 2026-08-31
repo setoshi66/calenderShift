@@ -3,6 +3,7 @@ import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { Nav } from "@/components/nav";
 import { thStyle, tdStyle } from "@/lib/table-styles";
+import { getViewMode } from "@/lib/view-mode";
 import { createStaff, toggleStaffActive } from "./actions";
 
 const ROLE_LABEL: Record<string, string> = {
@@ -15,17 +16,18 @@ export default async function StaffPage() {
   const session = await auth();
   const canWrite = session?.user.role === "ADMIN" || session?.user.role === "STORE_MANAGER";
 
-  const [staffList, stores] = await Promise.all([
+  const [staffList, stores, viewMode] = await Promise.all([
     prisma.staff.findMany({
       orderBy: { name: "asc" },
       include: { storeAssignments: { include: { store: true } } },
     }),
     prisma.store.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+    getViewMode(),
   ]);
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} />
       <main style={{ padding: "2rem", maxWidth: 960, margin: "0 auto" }}>
         <h1>スタッフ</h1>
 

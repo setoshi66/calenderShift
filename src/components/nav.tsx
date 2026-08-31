@@ -3,23 +3,31 @@
 import { useState } from "react";
 import Link from "next/link";
 import { signOutAction } from "@/lib/auth-actions";
+import { ViewModeToggle } from "@/components/view-mode-toggle";
+import type { ViewMode } from "@/lib/view-mode";
 
 const LINKS = [
   { href: "/", label: "カレンダー" },
-  { href: "/sp", label: "カレンダー(SP)" },
   { href: "/shifts", label: "シフト" },
-  { href: "/shifts/sp", label: "シフト(SP)" },
   { href: "/sales", label: "売上" },
-  { href: "/sales/sp", label: "売上(SP)" },
   { href: "/stores", label: "店舗" },
   { href: "/staff", label: "スタッフ" },
 ];
 
-export function Nav({ userEmail }: { userEmail?: string | null }) {
+export function Nav({ userEmail, viewMode }: { userEmail?: string | null; viewMode: ViewMode }) {
   const [open, setOpen] = useState(false);
 
   return (
-    <nav style={{ position: "relative", padding: "0.75rem 2rem", borderBottom: "1px solid #ddd" }}>
+    <nav
+      style={{
+        position: "relative",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+        padding: "0.75rem 2rem",
+        borderBottom: "1px solid #ddd",
+      }}
+    >
       <button
         type="button"
         onClick={() => setOpen((v) => !v)}
@@ -29,12 +37,11 @@ export function Nav({ userEmail }: { userEmail?: string | null }) {
         ☰
       </button>
 
+      <ViewModeToggle mode={viewMode} />
+
       {open && (
         <>
-          <div
-            onClick={() => setOpen(false)}
-            style={{ position: "fixed", inset: 0, zIndex: 9 }}
-          />
+          <div onClick={() => setOpen(false)} style={{ position: "fixed", inset: 0, zIndex: 9 }} />
           <div
             style={{
               position: "absolute",
