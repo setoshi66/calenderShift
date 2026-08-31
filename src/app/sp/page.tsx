@@ -132,8 +132,27 @@ export default async function CalendarSpPage({
                   scrollMarginTop: "1rem",
                 }}
               >
-                <div style={{ fontWeight: "bold", color: dateColor }}>
-                  {day.getUTCDate()}日（{WEEKDAY_LABEL_JA[weekday]}）
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <span style={{ fontWeight: "bold", color: dateColor }}>
+                    {day.getUTCDate()}日（{WEEKDAY_LABEL_JA[weekday]}）
+                  </span>
+                  {canWrite && (
+                    <div style={{ display: "flex", gap: "0.75rem" }}>
+                      <AddShiftDialog
+                        date={key}
+                        stores={stores}
+                        staffList={staffList}
+                        action={createShift}
+                        label={<span style={{ fontSize: "0.8rem", color: "#0969da" }}>＋ シフト</span>}
+                      />
+                      <AddEventDialog
+                        date={key}
+                        stores={stores}
+                        action={createEvent}
+                        label={<span style={{ fontSize: "0.8rem", color: "#0969da" }}>＋ イベント</span>}
+                      />
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
@@ -194,23 +213,6 @@ export default async function CalendarSpPage({
                   )}
                 </div>
 
-                {canWrite && (
-                  <div style={{ marginTop: "0.5rem", display: "flex", gap: "1rem" }}>
-                    <AddShiftDialog
-                      date={key}
-                      stores={stores}
-                      staffList={staffList}
-                      action={createShift}
-                      label={<span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ シフト追加</span>}
-                    />
-                    <AddEventDialog
-                      date={key}
-                      stores={stores}
-                      action={createEvent}
-                      label={<span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ イベント追加</span>}
-                    />
-                  </div>
-                )}
               </div>
             );
           })}

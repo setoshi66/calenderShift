@@ -157,11 +157,33 @@ export default async function ShiftsSpPage({
                   background: isToday ? "#fffbe6" : "#fff",
                 }}
               >
-                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                   <span style={{ fontWeight: "bold", color: dateColor }}>
                     {day.getUTCDate()}日（{WEEKDAY_LABEL_JA[weekday]}）
                   </span>
-                  {staffId && dayHours > 0 && <span style={{ fontSize: "0.8rem", color: "#666" }}>{dayHours.toFixed(1)}時間</span>}
+                  <div style={{ display: "flex", alignItems: "center", gap: "0.75rem" }}>
+                    {staffId && dayHours > 0 && <span style={{ fontSize: "0.8rem", color: "#666" }}>{dayHours.toFixed(1)}時間</span>}
+                    {canWrite && (
+                      <>
+                        <AddShiftDialog
+                          date={key}
+                          stores={stores}
+                          staffList={staffList}
+                          defaultStoreId={storeIds.length === 1 ? storeIds[0] : undefined}
+                          action={createShift}
+                          label={<span style={{ fontSize: "0.8rem", color: "#0969da" }}>＋ シフト</span>}
+                        />
+                        {storeIds.length === 1 && (
+                          <AddEventDialog
+                            date={key}
+                            stores={selectedStores}
+                            action={createEvent}
+                            label={<span style={{ fontSize: "0.8rem", color: "#0969da" }}>＋ イベント</span>}
+                          />
+                        )}
+                      </>
+                    )}
+                  </div>
                 </div>
 
                 <div style={{ marginTop: "0.5rem", display: "flex", flexDirection: "column", gap: "0.35rem" }}>
@@ -212,26 +234,6 @@ export default async function ShiftsSpPage({
                   )}
                 </div>
 
-                {canWrite && (
-                  <div style={{ marginTop: "0.5rem", display: "flex", gap: "1rem" }}>
-                    <AddShiftDialog
-                      date={key}
-                      stores={stores}
-                      staffList={staffList}
-                      defaultStoreId={storeIds.length === 1 ? storeIds[0] : undefined}
-                      action={createShift}
-                      label={<span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ シフト追加</span>}
-                    />
-                    {storeIds.length === 1 && (
-                      <AddEventDialog
-                        date={key}
-                        stores={selectedStores}
-                        action={createEvent}
-                        label={<span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ イベント追加</span>}
-                      />
-                    )}
-                  </div>
-                )}
               </div>
             );
           })}
