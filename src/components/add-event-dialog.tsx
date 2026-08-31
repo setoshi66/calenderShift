@@ -10,11 +10,13 @@ export function AddEventDialog({
   stores,
   action,
   children,
+  label,
 }: {
   date: string;
   stores: Option[];
   action: (formData: FormData) => Promise<void>;
   children?: ReactNode;
+  label?: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPending, startTransition] = useTransition();
@@ -47,7 +49,26 @@ export function AddEventDialog({
 
   return (
     <>
-      {children ? (
+      {label ? (
+        <button
+          type="button"
+          onClick={open}
+          style={{
+            display: "block",
+            width: "100%",
+            textAlign: "left",
+            padding: 0,
+            margin: 0,
+            border: "none",
+            background: "none",
+            font: "inherit",
+            color: "inherit",
+            cursor: "pointer",
+          }}
+        >
+          {label}
+        </button>
+      ) : children ? (
         <div
           onClick={(e) => {
             if (e.target === e.currentTarget) open();

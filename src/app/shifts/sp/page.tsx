@@ -220,13 +220,15 @@ export default async function ShiftsSpPage({
                       staffList={staffList}
                       defaultStoreId={storeIds.length === 1 ? storeIds[0] : undefined}
                       action={createShift}
-                    >
-                      <span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ シフト追加</span>
-                    </AddShiftDialog>
+                      label={<span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ シフト追加</span>}
+                    />
                     {storeIds.length === 1 && (
-                      <AddEventDialog date={key} stores={selectedStores} action={createEvent}>
-                        <span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ イベント追加</span>
-                      </AddEventDialog>
+                      <AddEventDialog
+                        date={key}
+                        stores={selectedStores}
+                        action={createEvent}
+                        label={<span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ イベント追加</span>}
+                      />
                     )}
                   </div>
                 )}

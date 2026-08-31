@@ -13,6 +13,7 @@ export function AddShiftDialog({
   defaultStoreId,
   action,
   children,
+  label,
 }: {
   date: string;
   stores: Option[];
@@ -21,6 +22,7 @@ export function AddShiftDialog({
   defaultStoreId?: string;
   action: (formData: FormData) => Promise<void>;
   children?: ReactNode;
+  label?: ReactNode;
 }) {
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPending, startTransition] = useTransition();
@@ -53,7 +55,26 @@ export function AddShiftDialog({
 
   return (
     <>
-      {children ? (
+      {label ? (
+        <button
+          type="button"
+          onClick={open}
+          style={{
+            display: "block",
+            width: "100%",
+            textAlign: "left",
+            padding: 0,
+            margin: 0,
+            border: "none",
+            background: "none",
+            font: "inherit",
+            color: "inherit",
+            cursor: "pointer",
+          }}
+        >
+          {label}
+        </button>
+      ) : children ? (
         <div
           onClick={(e) => {
             if (e.target === e.currentTarget) open();

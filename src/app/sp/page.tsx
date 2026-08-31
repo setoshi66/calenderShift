@@ -196,12 +196,19 @@ export default async function CalendarSpPage({
 
                 {canWrite && (
                   <div style={{ marginTop: "0.5rem", display: "flex", gap: "1rem" }}>
-                    <AddShiftDialog date={key} stores={stores} staffList={staffList} action={createShift}>
-                      <span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ シフト追加</span>
-                    </AddShiftDialog>
-                    <AddEventDialog date={key} stores={stores} action={createEvent}>
-                      <span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ イベント追加</span>
-                    </AddEventDialog>
+                    <AddShiftDialog
+                      date={key}
+                      stores={stores}
+                      staffList={staffList}
+                      action={createShift}
+                      label={<span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ シフト追加</span>}
+                    />
+                    <AddEventDialog
+                      date={key}
+                      stores={stores}
+                      action={createEvent}
+                      label={<span style={{ fontSize: "0.85rem", color: "#0969da" }}>＋ イベント追加</span>}
+                    />
                   </div>
                 )}
               </div>
