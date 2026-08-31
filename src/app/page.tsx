@@ -1,69 +1,226 @@
-import Image from "next/image";
-import styles from "./page.module.css";
+import Link from "next/link";
+import { auth } from "@/lib/auth";
+import { prisma } from "@/lib/prisma";
+import { Nav } from "@/components/nav";
+import { AddShiftDialog } from "@/components/add-shift-dialog";
+import { AddEventDialog } from "@/components/add-event-dialog";
+import { EditEventDialog } from "@/components/edit-event-dialog";
+import { StoreFilterChips } from "@/components/store-filter-chips";
+import { addDays, formatDate, jstDateKey, todayInJst, WEEKDAY_LABEL_JA } from "@/lib/date";
+import { toArray } from "@/lib/array";
+import { createShift } from "@/app/shifts/actions";
+import { createEvent, deleteEvent, updateEvent } from "@/app/events/actions";
 
-export default function Home() {
+function monthLink(year: number, month: number, storeIds: string[]) {
+  const q = new URLSearchParams({ year: String(year), month: String(month) });
+  storeIds.forEach((id) => q.append("storeId", id));
+  return `/?${q.toString()}`;
+}
+
+export default async function DashboardPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ year?: string; month?: string; storeId?: string | string[] }>;
+}) {
+  const params = await searchParams;
+  const session = await auth();
+  const canWrite = session?.user.role === "ADMIN" || session?.user.role === "STORE_MANAGER";
+  const today = todayInJst();
+
+  const year = Number(params.year) || today.getUTCFullYear();
+  const month = Number(params.month) || today.getUTCMonth() + 1; // 1-12
+  const storeIds = toArray(params.storeId);
+  const showStoreName = storeIds.length !== 1;
+
+  const firstOfMonth = new Date(Date.UTC(year, month - 1, 1));
+  const lastOfMonth = new Date(Date.UTC(year, month, 0));
+  const gridStart = addDays(firstOfMonth, -firstOfMonth.getUTCDay());
+  const gridEnd = addDays(lastOfMonth, 6 - lastOfMonth.getUTCDay());
+
+  const cells: Date[] = [];
+  for (let d = gridStart; d <= gridEnd; d = addDays(d, 1)) {
+    cells.push(d);
+  }
+
+  const [shifts, events, stores, staffList] = await Promise.all([
+    prisma.shift.findMany({
+      where: {
+        storeId: storeIds.length ? { in: storeIds } : undefined,
+        workDate: { gte: gridStart, lte: gridEnd },
+      },
+      include: { staff: true, store: true },
+      orderBy: [{ startTime: "asc" }],
+    }),
+    prisma.storeEvent.findMany({
+      where: {
+        storeId: storeIds.length ? { in: storeIds } : undefined,
+        startAt: { gte: addDays(gridStart, -1), lte: addDays(gridEnd, 1) },
+      },
+      include: { store: true },
+      orderBy: [{ startAt: "asc" }],
+    }),
+    prisma.store.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+    prisma.staff.findMany({ where: { isActive: true }, orderBy: { name: "asc" } }),
+  ]);
+
+  const shiftsByDate = new Map<string, typeof shifts>();
+  for (const shift of shifts) {
+    const key = formatDate(shift.workDate);
+    shiftsByDate.set(key, [...(shiftsByDate.get(key) ?? []), shift]);
+  }
+
+  const eventsByDate = new Map<string, typeof events>();
+  for (const event of events) {
+    const key = jstDateKey(event.startAt);
+    eventsByDate.set(key, [...(eventsByDate.get(key) ?? []), event]);
+  }
+
+  const prevMonth = month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
+  const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
+  const todayKey = formatDate(today);
+
   return (
-    <div className={styles.page}>
-      <main className={styles.main}>
-        <Image
-          className={styles.logo}
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className={styles.intro}>
-          <h1>
-            To get started, edit the{" "}
-            <code className={styles.code}>page.tsx</code> file.
-          </h1>
-          <p>
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <>
+      <Nav userEmail={session?.user?.email} />
+      <main style={{ padding: "2rem", maxWidth: 1200, margin: "0 auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+          <Link href={monthLink(prevMonth.year, prevMonth.month, storeIds)}>← 前の月</Link>
+          <strong>
+            {year}年{month}月
+          </strong>
+          <Link href={monthLink(nextMonth.year, nextMonth.month, storeIds)}>次の月 →</Link>
         </div>
-        <div className={styles.ctas}>
-          <a
-            className={styles.primary}
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className={styles.logo}
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={14}
-            />
-            Deploy Now
-          </a>
-          <a
-            className={styles.secondary}
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div style={{ marginTop: "0.75rem" }}>
+          <StoreFilterChips stores={stores} storeIds={storeIds} year={year} month={month} basePath="/" />
+        </div>
+
+        <div
+          style={{
+            display: "grid",
+            gridTemplateColumns: "repeat(7, 1fr)",
+            marginTop: "1rem",
+            border: "1px solid #ccc",
+          }}
+        >
+          {WEEKDAY_LABEL_JA.map((label) => (
+            <div
+              key={label}
+              style={{
+                textAlign: "center",
+                fontWeight: "bold",
+                padding: "0.4rem",
+                borderBottom: "1px solid #ccc",
+                background: "#f5f5f5",
+              }}
+            >
+              {label}
+            </div>
+          ))}
+
+          {cells.map((date) => {
+            const key = formatDate(date);
+            const isCurrentMonth = date.getUTCMonth() + 1 === month;
+            const dayShifts = shiftsByDate.get(key) ?? [];
+            const dayEvents = eventsByDate.get(key) ?? [];
+            return (
+              <div
+                key={key}
+                style={{
+                  minHeight: 110,
+                  border: "1px solid #eee",
+                  padding: "0.35rem",
+                  background: key === todayKey ? "#fffbe6" : isCurrentMonth ? "#fff" : "#fafafa",
+                  color: isCurrentMonth ? "#000" : "#bbb",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginBottom: "0.25rem",
+                  }}
+                >
+                  <span style={{ fontSize: "0.85rem" }}>{date.getUTCDate()}</span>
+                  {canWrite && (
+                    <div style={{ display: "flex", gap: "0.2rem" }}>
+                      <AddShiftDialog
+                        date={key}
+                        stores={stores}
+                        staffList={staffList}
+                        defaultStoreId={storeIds.length === 1 ? storeIds[0] : undefined}
+                        action={createShift}
+                      />
+                      <AddEventDialog date={key} stores={stores} action={createEvent} />
+                    </div>
+                  )}
+                </div>
+                {dayEvents.map((event) => (
+                  <div
+                    key={event.id}
+                    style={{
+                      fontSize: "0.85rem",
+                      marginBottom: "0.15rem",
+                      background: event.store.color,
+                      color: "#fff",
+                      fontWeight: "bold",
+                      padding: "0.05rem 0.3rem",
+                      borderRadius: 3,
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                    title={`${event.store.name} / ${event.name}${event.organizer ? ` / 主催: ${event.organizer}` : ""}`}
+                  >
+                    {canWrite ? (
+                      <EditEventDialog
+                        event={{
+                          id: event.id,
+                          storeId: event.storeId,
+                          name: event.name,
+                          organizer: event.organizer,
+                          startAt: event.startAt,
+                          endAt: event.endAt,
+                        }}
+                        stores={stores}
+                        updateAction={updateEvent}
+                        deleteAction={deleteEvent}
+                      >
+                        📅 {showStoreName ? `(${event.store.name[0]}) ${event.name}` : event.name}
+                      </EditEventDialog>
+                    ) : (
+                      <>📅 {showStoreName ? `(${event.store.name[0]}) ${event.name}` : event.name}</>
+                    )}
+                  </div>
+                ))}
+                {dayShifts.map((shift) => (
+                  <div
+                    key={shift.id}
+                    style={{
+                      fontSize: "0.85rem",
+                      marginBottom: "0.15rem",
+                      background: shift.store.color,
+                      color: "#fff",
+                      padding: "0.05rem 0.3rem",
+                      borderRadius: 3,
+                      opacity: shift.status === "CANCELLED" ? 0.55 : shift.status === "DRAFT" ? 0.75 : 1,
+                      textDecoration: shift.status === "CANCELLED" ? "line-through" : "none",
+                      whiteSpace: "nowrap",
+                      overflow: "hidden",
+                      textOverflow: "ellipsis",
+                    }}
+                    title={`${shift.store.name} / ${shift.staff.name} / ${shift.startTime}-${shift.endTime}`}
+                  >
+                    {shift.startTime} {shift.staff.name}
+                    {showStoreName && `(${shift.store.name[0]})`}
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
       </main>
-    </div>
+    </>
   );
 }

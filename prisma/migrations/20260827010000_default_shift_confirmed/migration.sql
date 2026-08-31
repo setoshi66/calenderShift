@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "shifts" ALTER COLUMN "status" SET DEFAULT 'CONFIRMED';

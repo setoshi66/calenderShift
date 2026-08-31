@@ -1,0 +1,198 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum StaffRole {
+  ADMIN
+  STORE_MANAGER
+  STAFF
+}
+
+enum ShiftStatus {
+  DRAFT
+  CONFIRMED
+  CANCELLED
+}
+
+enum SyncStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+// 店舗マスタ
+model Store {
+  id              String   @id @default(cuid())
+  name            String
+  address         String?
+  phone           String?
+  timezone        String   @default("Asia/Tokyo")
+  googleCalendarId String? // 店舗の共有Googleカレンダー ID
+  color           String   @default("#4a90d9") // カレンダー・勤務表での識別色
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  businessCalendar StoreBusinessCalendar[]
+  staffAssignments StaffStoreAssignment[]
+  shifts           Shift[]
+  events           StoreEvent[]
+  dailySales       DailySales[]
+
+  @@map("stores")
+}
+
+// 店舗別営業カレンダー（日単位の営業/休業・時間の管理）
+model StoreBusinessCalendar {
+  id        String   @id @default(cuid())
+  storeId   String
+  date      DateTime @db.Date
+  isOpen    Boolean  @default(true)
+  openTime  String? // "10:00" 形式。休業日はnull
+  closeTime String? // "20:00" 形式
+  note      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, date])
+  @@index([date])
+  @@map("store_business_calendars")
+}
+
+// スタッフマスタ
+model Staff {
+  id             String    @id @default(cuid())
+  name           String
+  email          String?   @unique // Google OAuthログインに使用（未設定の場合はログイン不可）
+  phone          String?
+  employmentType String? // 例: 正社員 / パート / アルバイト
+  role           StaffRole @default(STAFF)
+  isActive       Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  storeAssignments StaffStoreAssignment[]
+  shifts           Shift[]
+
+  @@map("staff")
+}
+
+// スタッフの所属可能店舗（多対多）
+model StaffStoreAssignment {
+  id        String   @id @default(cuid())
+  staffId   String
+  storeId   String
+  isPrimary Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, storeId])
+  @@map("staff_store_assignments")
+}
+
+// シフト（管理者が直接確定登録）
+model Shift {
+  id            String      @id @default(cuid())
+  staffId       String
+  storeId       String
+  workDate      DateTime    @db.Date
+  startTime     String // "09:00"
+  endTime       String // "17:00"
+  breakMinutes  Int         @default(0)
+  status        ShiftStatus @default(CONFIRMED)
+  note          String?
+  createdById   String? // 登録した管理者のstaff id
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  calendarSync GoogleCalendarSync?
+
+  @@unique([staffId, storeId, workDate, startTime])
+  @@index([workDate])
+  @@index([storeId, workDate])
+  @@map("shifts")
+}
+
+// Googleカレンダー連携（片方向: システム → 店舗共有カレンダー）
+model GoogleCalendarSync {
+  id            String     @id @default(cuid())
+  shiftId       String     @unique
+  googleEventId String?
+  syncStatus    SyncStatus @default(PENDING)
+  errorMessage  String?
+  syncedAt      DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  shift Shift @relation(fields: [shiftId], references: [id], onDelete: Cascade)
+
+  @@map("google_calendar_syncs")
+}
+
+// 店舗イベント（フェア、催事、キャンペーンなど店舗単位のイベント）
+model StoreEvent {
+  id          String   @id @default(cuid())
+  storeId     String
+  name        String // イベント名
+  organizer   String? // 主催
+  startAt     DateTime
+  endAt       DateTime
+  createdById String? // 登録した管理者のstaff id
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  calendarSync StoreEventCalendarSync?
+
+  @@index([storeId, startAt])
+  @@map("store_events")
+}
+
+// 店舗イベントのGoogleカレンダー連携（片方向: システム → 店舗共有カレンダー）
+model StoreEventCalendarSync {
+  id            String     @id @default(cuid())
+  storeEventId  String     @unique
+  googleEventId String?
+  syncStatus    SyncStatus @default(PENDING)
+  errorMessage  String?
+  syncedAt      DateTime?
+  createdAt     DateTime   @default(now())
+  updatedAt     DateTime   @updatedAt
+
+  storeEvent StoreEvent @relation(fields: [storeEventId], references: [id], onDelete: Cascade)
+
+  @@map("store_event_calendar_syncs")
+}
+
+// 日次売上（店舗・日付ごとに1件、支払方法別の内訳を持つ）
+model DailySales {
+  id          String   @id @default(cuid())
+  storeId     String
+  date        DateTime @db.Date
+  cashAmount  Int      @default(0) // 現金売上
+  cardAmount  Int      @default(0) // カード売上
+  otherAmount Int      @default(0) // その他（電子マネー・QR決済など）
+  note        String?
+  createdById String? // 登録した管理者のstaff id
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
+
+  @@unique([storeId, date])
+  @@index([date])
+  @@map("daily_sales")
+}
