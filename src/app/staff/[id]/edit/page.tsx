@@ -8,6 +8,7 @@ import { updateStaff } from "../../actions";
 export default async function EditStaffPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const session = await auth();
+  const isAdmin = session?.user.role === "ADMIN";
 
   const [staff, stores, viewMode] = await Promise.all([
     prisma.staff.findUnique({ where: { id }, include: { storeAssignments: true } }),
@@ -46,6 +47,12 @@ export default async function EditStaffPage({ params }: { params: Promise<{ id: 
               style={{ width: "100%" }}
             />
           </label>
+          {isAdmin && (
+            <label>
+              時給（円）
+              <input type="number" name="hourlyWage" min={0} step={1} defaultValue={staff.hourlyWage ?? ""} style={{ width: "100%" }} />
+            </label>
+          )}
           <label>
             ロール
             <select name="role" defaultValue={staff.role} style={{ width: "100%" }}>

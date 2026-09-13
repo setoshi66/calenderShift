@@ -11,6 +11,15 @@ export async function assertWriteAccess() {
   return session;
 }
 
+// 時給など管理者ロール限定の項目を扱うServer Actionsから使う版。
+export async function assertAdmin() {
+  const session = await auth();
+  if (!session?.user || session.user.role !== "ADMIN") {
+    throw new Error("この操作を行う権限がありません");
+  }
+  return session;
+}
+
 export async function requireSession() {
   const session = await auth();
   if (!session?.user) {

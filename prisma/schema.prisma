@@ -73,6 +73,7 @@ model Staff {
   email          String?   @unique // Google OAuthログインに使用（未設定の場合はログイン不可）
   phone          String?
   employmentType String? // 例: 正社員 / パート / アルバイト
+  hourlyWage     Int? // 時給（円）。管理者ロールのみ設定・閲覧可能
   role           StaffRole @default(STAFF)
   isActive       Boolean   @default(true)
   createdAt      DateTime  @default(now())

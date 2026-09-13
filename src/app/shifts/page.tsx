@@ -30,6 +30,7 @@ export default async function ShiftsPage({
   const params = await searchParams;
   const session = await auth();
   const canWrite = session?.user.role === "ADMIN" || session?.user.role === "STORE_MANAGER";
+  const isAdmin = session?.user.role === "ADMIN";
   const today = todayInJst();
   const viewMode = await getViewMode();
 
@@ -104,9 +105,12 @@ export default async function ShiftsPage({
   }
 
   const selectedStores = stores.filter((s) => storeIds.includes(s.id));
+  const filteredStaffHourlyWage = staffId ? (columnStaff[0]?.hourlyWage ?? null) : null;
   const monthlyHours = staffId
     ? shifts.filter((s) => s.status !== "CANCELLED").reduce((sum, s) => sum + shiftHours(s.startTime, s.endTime, s.breakMinutes), 0)
     : null;
+  const monthlyPay =
+    isAdmin && monthlyHours !== null && filteredStaffHourlyWage != null ? monthlyHours * filteredStaffHourlyWage : null;
 
   const prevMonth = month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
   const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
@@ -155,6 +159,12 @@ export default async function ShiftsPage({
           {monthlyHours !== null && (
             <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", textAlign: "right" }}>
               今月の勤務時間合計: <strong>{monthlyHours.toFixed(1)}時間</strong>
+              {isAdmin && (
+                <>
+                  {" / 報酬合計: "}
+                  <strong>{monthlyPay != null ? `¥${Math.round(monthlyPay).toLocaleString("ja-JP")}` : "-"}</strong>
+                </>
+              )}
             </div>
           )}
 
@@ -169,6 +179,7 @@ export default async function ShiftsPage({
               const dayHours = dayShifts
                 .filter((s) => s.status !== "CANCELLED")
                 .reduce((sum, s) => sum + shiftHours(s.startTime, s.endTime, s.breakMinutes), 0);
+              const dayPay = isAdmin && filteredStaffHourlyWage != null ? dayHours * filteredStaffHourlyWage : null;
 
               return (
                 <div
@@ -186,7 +197,10 @@ export default async function ShiftsPage({
                     </span>
                     <div style={{ display: "flex", alignItems: "center", gap: "0.75rem", flexShrink: 0 }}>
                       {staffId && dayHours > 0 && (
-                        <span style={{ fontSize: "0.8rem", color: "#666", whiteSpace: "nowrap" }}>{dayHours.toFixed(1)}時間</span>
+                        <span style={{ fontSize: "0.8rem", color: "#666", whiteSpace: "nowrap" }}>
+                          {dayHours.toFixed(1)}時間
+                          {dayPay != null && ` / ¥${Math.round(dayPay).toLocaleString("ja-JP")}`}
+                        </span>
                       )}
                       {canWrite && (
                         <>
@@ -254,10 +268,12 @@ export default async function ShiftsPage({
                           storeName: shift.store.name,
                           storeColor: shift.store.color,
                           staffName: shift.staff.name,
+                          staffHourlyWage: shift.staff.hourlyWage,
                         }}
                         stores={stores}
                         staffList={allStaff}
                         showStore={showStoreName}
+                        isAdmin={isAdmin}
                         updateAction={updateShift}
                         deleteAction={deleteShift}
                       />
@@ -378,12 +394,27 @@ export default async function ShiftsPage({
                     勤務時間
                   </th>
                 )}
+                {staffId && isAdmin && (
+                  <th
+                    style={{
+                      textAlign: "center",
+                      padding: "0.35rem 0.5rem",
+                      border: "1px solid #ccc",
+                      background: "#f5f5f5",
+                      minWidth: 90,
+                      fontWeight: "normal",
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    報酬
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
               {columnStaff.length === 0 ? (
                 <tr>
-                  <td colSpan={staffId ? 4 : 3} style={{ color: "#888", padding: "0.75rem 0", border: "1px solid #ccc" }}>
+                  <td colSpan={staffId ? (isAdmin ? 5 : 4) : 3} style={{ color: "#888", padding: "0.75rem 0", border: "1px solid #ccc" }}>
                     該当するスタッフがいません。
                   </td>
                 </tr>
@@ -500,10 +531,12 @@ export default async function ShiftsPage({
                                     note: shift.note,
                                     storeName: shift.store.name,
                                     storeColor: shift.store.color,
+                                    staffHourlyWage: shift.staff.hourlyWage,
                                   }}
                                   stores={stores}
                                   staffList={allStaff}
                                   showStore={showStoreName}
+                                  isAdmin={isAdmin}
                                   updateAction={updateShift}
                                   deleteAction={deleteShift}
                                 />
@@ -531,18 +564,34 @@ export default async function ShiftsPage({
                           const total = cellShifts
                             .filter((shift) => shift.status !== "CANCELLED")
                             .reduce((sum, shift) => sum + shiftHours(shift.startTime, shift.endTime, shift.breakMinutes), 0);
+                          const pay = isAdmin && filteredStaffHourlyWage != null ? total * filteredStaffHourlyWage : null;
                           return (
-                            <td
-                              style={{
-                                textAlign: "right",
-                                padding: "0.25rem 0.5rem",
-                                border: "1px solid #ddd",
-                                background: dayKey === todayKey ? "#fffbe6" : undefined,
-                                fontSize: "0.8rem",
-                              }}
-                            >
-                              {total > 0 ? `${total.toFixed(1)}時間` : ""}
-                            </td>
+                            <>
+                              <td
+                                style={{
+                                  textAlign: "right",
+                                  padding: "0.25rem 0.5rem",
+                                  border: "1px solid #ddd",
+                                  background: dayKey === todayKey ? "#fffbe6" : undefined,
+                                  fontSize: "0.8rem",
+                                }}
+                              >
+                                {total > 0 ? `${total.toFixed(1)}時間` : ""}
+                              </td>
+                              {isAdmin && (
+                                <td
+                                  style={{
+                                    textAlign: "right",
+                                    padding: "0.25rem 0.5rem",
+                                    border: "1px solid #ddd",
+                                    background: dayKey === todayKey ? "#fffbe6" : undefined,
+                                    fontSize: "0.8rem",
+                                  }}
+                                >
+                                  {pay != null && pay > 0 ? `¥${Math.round(pay).toLocaleString("ja-JP")}` : ""}
+                                </td>
+                              )}
+                            </>
                           );
                         })()}
                     </tr>
@@ -576,12 +625,22 @@ export default async function ShiftsPage({
                       fontSize: "0.8rem",
                     }}
                   >
-                    {shifts
-                      .filter((shift) => shift.status !== "CANCELLED")
-                      .reduce((sum, shift) => sum + shiftHours(shift.startTime, shift.endTime, shift.breakMinutes), 0)
-                      .toFixed(1)}
-                    時間
+                    {(monthlyHours ?? 0).toFixed(1)}時間
                   </td>
+                  {isAdmin && (
+                    <td
+                      style={{
+                        textAlign: "right",
+                        padding: "0.25rem 0.5rem",
+                        border: "1px solid #ccc",
+                        background: "#f5f5f5",
+                        fontWeight: "bold",
+                        fontSize: "0.8rem",
+                      }}
+                    >
+                      {monthlyPay != null ? `¥${Math.round(monthlyPay).toLocaleString("ja-JP")}` : "-"}
+                    </td>
+                  )}
                 </tr>
               )}
             </tbody>

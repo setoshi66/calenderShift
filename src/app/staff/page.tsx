@@ -15,6 +15,7 @@ const ROLE_LABEL: Record<string, string> = {
 export default async function StaffPage() {
   const session = await auth();
   const canWrite = session?.user.role === "ADMIN" || session?.user.role === "STORE_MANAGER";
+  const isAdmin = session?.user.role === "ADMIN";
 
   const [staffList, stores, viewMode] = await Promise.all([
     prisma.staff.findMany({
@@ -36,6 +37,7 @@ export default async function StaffPage() {
               <th style={thStyle}>メール</th>
               <th style={thStyle}>ロール</th>
               <th style={thStyle}>所属店舗</th>
+              {isAdmin && <th style={{ ...thStyle, textAlign: "right" }}>時給</th>}
               <th style={thStyle}>状態</th>
               {canWrite && <th style={thStyle} />}
             </tr>
@@ -47,6 +49,11 @@ export default async function StaffPage() {
                 <td style={tdStyle}>{staff.email}</td>
                 <td style={tdStyle}>{ROLE_LABEL[staff.role] ?? staff.role}</td>
                 <td style={tdStyle}>{staff.storeAssignments.map((a) => a.store.name).join(", ")}</td>
+                {isAdmin && (
+                  <td style={{ ...tdStyle, textAlign: "right" }}>
+                    {staff.hourlyWage != null ? `¥${staff.hourlyWage.toLocaleString("ja-JP")}` : "-"}
+                  </td>
+                )}
                 <td style={tdStyle}>{staff.isActive ? "有効" : "無効"}</td>
                 {canWrite && (
                   <td style={{ ...tdStyle, display: "flex", gap: "0.5rem" }}>
@@ -83,6 +90,12 @@ export default async function StaffPage() {
                 雇用形態
                 <input type="text" name="employmentType" placeholder="正社員 / パート / アルバイト" style={{ width: "100%" }} />
               </label>
+              {isAdmin && (
+                <label>
+                  時給（円）
+                  <input type="number" name="hourlyWage" min={0} step={1} style={{ width: "100%" }} />
+                </label>
+              )}
               <label>
                 ロール
                 <select name="role" defaultValue="STAFF" style={{ width: "100%" }}>

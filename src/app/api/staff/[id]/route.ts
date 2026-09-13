@@ -7,13 +7,14 @@ const updateStaffSchema = z.object({
   email: z.string().email().optional(),
   phone: z.string().optional(),
   employmentType: z.string().optional(),
+  hourlyWage: z.number().int().nonnegative().optional(),
   role: z.enum(["ADMIN", "STORE_MANAGER", "STAFF"]).optional(),
   isActive: z.boolean().optional(),
   storeIds: z.array(z.string()).optional(),
 });
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireSession();
+  const { session, error } = await requireSession();
   if (error) return error;
 
   const { id } = await params;
@@ -22,11 +23,16 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     include: { storeAssignments: { include: { store: true } } },
   });
   if (!staff) return Response.json({ error: "Not found" }, { status: 404 });
+  const isAdmin = session.user.role === "ADMIN";
+  if (!isAdmin) {
+    const { hourlyWage, ...rest } = staff;
+    return Response.json(rest);
+  }
   return Response.json(staff);
 }
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireWriteAccess();
+  const { session, error } = await requireWriteAccess();
   if (error) return error;
 
   const { id } = await params;
@@ -36,7 +42,8 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return Response.json({ error: parsed.error.flatten() }, { status: 400 });
   }
 
-  const { storeIds, ...data } = parsed.data;
+  const { storeIds, hourlyWage, ...data } = parsed.data;
+  const isAdmin = session.user.role === "ADMIN";
 
   const staff = await prisma.$transaction(async (tx) => {
     if (storeIds) {
@@ -47,7 +54,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     }
     return tx.staff.update({
       where: { id },
-      data,
+      data: { ...data, hourlyWage: isAdmin ? hourlyWage : undefined },
       include: { storeAssignments: { include: { store: true } } },
     });
   });

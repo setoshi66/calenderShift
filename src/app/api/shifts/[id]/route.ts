@@ -15,7 +15,7 @@ const updateShiftSchema = z.object({
 });
 
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const { error } = await requireSession();
+  const { session, error } = await requireSession();
   if (error) return error;
 
   const { id } = await params;
@@ -24,6 +24,11 @@ export async function GET(_request: Request, { params }: { params: Promise<{ id:
     include: { staff: true, store: true, calendarSync: true },
   });
   if (!shift) return Response.json({ error: "Not found" }, { status: 404 });
+  const isAdmin = session.user.role === "ADMIN";
+  if (!isAdmin) {
+    const { hourlyWage, ...staff } = shift.staff;
+    return Response.json({ ...shift, staff });
+  }
   return Response.json(shift);
 }
 

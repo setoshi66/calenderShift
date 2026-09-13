@@ -15,7 +15,7 @@ const createShiftSchema = z.object({
 });
 
 export async function GET(request: Request) {
-  const { error } = await requireSession();
+  const { session, error } = await requireSession();
   if (error) return error;
 
   const { searchParams } = new URL(request.url);
@@ -37,7 +37,11 @@ export async function GET(request: Request) {
     include: { staff: true, store: true, calendarSync: true },
     orderBy: [{ workDate: "asc" }, { startTime: "asc" }],
   });
-  return Response.json(shifts);
+  const isAdmin = session.user.role === "ADMIN";
+  const result = isAdmin
+    ? shifts
+    : shifts.map(({ staff: { hourlyWage, ...staff }, ...s }) => ({ ...s, staff }));
+  return Response.json(result);
 }
 
 export async function POST(request: Request) {

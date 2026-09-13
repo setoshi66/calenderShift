@@ -2,6 +2,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { shiftHours } from "@/lib/date";
 
 type Option = { id: string; name: string };
 
@@ -10,6 +11,7 @@ export function ShiftBadge({
   stores,
   staffList,
   showStore,
+  isAdmin,
   updateAction,
   deleteAction,
 }: {
@@ -26,13 +28,19 @@ export function ShiftBadge({
     storeName: string;
     storeColor: string;
     staffName?: string;
+    staffHourlyWage?: number | null;
   };
   stores: Option[];
   staffList: Option[];
   showStore: boolean;
+  isAdmin?: boolean;
   updateAction: (formData: FormData) => Promise<void>;
   deleteAction: (formData: FormData) => Promise<void>;
 }) {
+  const pay =
+    isAdmin && shift.staffHourlyWage != null
+      ? shiftHours(shift.startTime, shift.endTime, shift.breakMinutes) * shift.staffHourlyWage
+      : null;
   const dialogRef = useRef<HTMLDialogElement>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
@@ -164,6 +172,16 @@ export function ShiftBadge({
             メモ
             <input type="text" name="note" defaultValue={shift.note ?? ""} style={{ width: "100%" }} />
           </label>
+          {isAdmin && (
+            <div style={{ fontSize: "0.85rem", color: "#555" }}>
+              報酬:{" "}
+              {pay != null ? (
+                <strong>{`¥${Math.round(pay).toLocaleString("ja-JP")}`}</strong>
+              ) : (
+                "時給未設定"
+              )}
+            </div>
+          )}
           {error && <p style={{ color: "red", margin: 0 }}>{error}</p>}
           <div style={{ display: "flex", justifyContent: "space-between", gap: "0.5rem" }}>
             <button type="button" onClick={handleDelete} disabled={isPending}>

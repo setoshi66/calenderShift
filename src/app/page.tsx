@@ -28,6 +28,7 @@ export default async function DashboardPage({
   const params = await searchParams;
   const session = await auth();
   const canWrite = session?.user.role === "ADMIN" || session?.user.role === "STORE_MANAGER";
+  const isAdmin = session?.user.role === "ADMIN";
   const today = todayInJst();
   const viewMode = await getViewMode();
 
@@ -223,10 +224,12 @@ export default async function DashboardPage({
                           storeName: shift.store.name,
                           storeColor: shift.store.color,
                           staffName: shift.staff.name,
+                          staffHourlyWage: shift.staff.hourlyWage,
                         }}
                         stores={stores}
                         staffList={staffList}
                         showStore={showStoreName}
+                        isAdmin={isAdmin}
                         updateAction={updateShift}
                         deleteAction={deleteShift}
                       />
@@ -381,10 +384,12 @@ export default async function DashboardPage({
                       storeName: shift.store.name,
                       storeColor: shift.store.color,
                       staffName: shift.staff.name,
+                      staffHourlyWage: shift.staff.hourlyWage,
                     }}
                     stores={stores}
                     staffList={staffList}
                     showStore={showStoreName}
+                    isAdmin={isAdmin}
                     updateAction={updateShift}
                     deleteAction={deleteShift}
                   />
