@@ -25,6 +25,12 @@ enum SyncStatus {
   FAILED
 }
 
+enum PreferenceStatus {
+  OK // ○ 出勤可能
+  MAYBE // △ 応相談
+  NG // ✕ 出勤不可
+}
+
 // 店舗マスタ
 model Store {
   id              String   @id @default(cuid())
@@ -81,8 +87,25 @@ model Staff {
 
   storeAssignments StaffStoreAssignment[]
   shifts           Shift[]
+  shiftPreferences ShiftPreference[]
 
   @@map("staff")
+}
+
+// シフト希望（○/△/✕）。日単位・スタッフ単位で誰でも編集可能。
+model ShiftPreference {
+  id        String            @id @default(cuid())
+  staffId   String
+  date      DateTime          @db.Date
+  status    PreferenceStatus
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, date])
+  @@index([date])
+  @@map("shift_preferences")
 }
 
 // スタッフの所属可能店舗（多対多）

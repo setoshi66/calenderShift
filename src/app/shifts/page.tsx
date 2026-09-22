@@ -8,11 +8,13 @@ import { EditEventDialog } from "@/components/edit-event-dialog";
 import { ShiftBadge } from "@/components/shift-badge";
 import { StoreFilterChips } from "@/components/store-filter-chips";
 import { AutoSubmitSelect } from "@/components/auto-submit-select";
+import { ShiftPreferenceSelect, preferenceLabel } from "@/components/shift-preference-select";
 import { addDays, formatDate, jstDateKey, shiftHours, todayInJst, WEEKDAY_LABEL_JA } from "@/lib/date";
 import { appendStoreIdsToParams, resolveStoreIds } from "@/lib/array";
 import { getViewMode } from "@/lib/view-mode";
 import { getStoredStoreIds } from "@/lib/store-filter";
 import { createShift, deleteShift, updateShift } from "./actions";
+import { upsertShiftPreference } from "./preference-actions";
 import { createEvent, deleteEvent, updateEvent } from "@/app/events/actions";
 
 function monthLink(year: number, month: number, storeIds: string[], staffId: string | undefined) {
@@ -52,7 +54,7 @@ export default async function ShiftsPage({
     days.push(d);
   }
 
-  const [allStaff, columnStaff, shifts, storeEvents] = await Promise.all([
+  const [allStaff, columnStaff, shifts, storeEvents, preferences] = await Promise.all([
     // 店舗のみで絞り込んだスタッフ一覧（絞り込みセレクトの選択肢・編集ダイアログのスタッフ選択に使用）
     prisma.staff.findMany({
       where: {
@@ -87,7 +89,23 @@ export default async function ShiftsPage({
       include: { store: true },
       orderBy: { startAt: "asc" },
     }),
+    // シフト希望（columnStaffと同じ絞り込み条件）
+    prisma.shiftPreference.findMany({
+      where: {
+        date: { gte: firstOfMonth, lte: lastOfMonth },
+        staff: {
+          isActive: true,
+          id: staffId,
+          storeAssignments: { some: { storeId: { in: storeIds } } },
+        },
+      },
+    }),
   ]);
+
+  const preferenceByStaffAndDate = new Map<string, string>();
+  for (const pref of preferences) {
+    preferenceByStaffAndDate.set(`${pref.staffId}_${formatDate(pref.date)}`, pref.status);
+  }
 
   const shiftsByDate = new Map<string, typeof shifts>();
   const shiftsByStaffAndDate = new Map<string, typeof shifts>();
@@ -205,6 +223,19 @@ export default async function ShiftsPage({
                         <span style={{ fontSize: "0.8rem", color: "#666", whiteSpace: "nowrap" }}>
                           {dayHours.toFixed(1)}時間
                           {dayPay != null && ` / ¥${Math.round(dayPay).toLocaleString("ja-JP")}`}
+                        </span>
+                      )}
+                      {staffId && (
+                        <span style={{ display: "flex", alignItems: "center", gap: "0.25rem", fontSize: "0.8rem", color: "#666" }}>
+                          希望
+                          <span style={{ width: "3.2rem" }}>
+                            <ShiftPreferenceSelect
+                              staffId={staffId}
+                              date={key}
+                              value={preferenceByStaffAndDate.get(`${staffId}_${key}`) ?? ""}
+                              action={upsertShiftPreference}
+                            />
+                          </span>
                         </span>
                       )}
                       {canWrite && (
@@ -424,12 +455,27 @@ export default async function ShiftsPage({
                     報酬
                   </th>
                 )}
+                {staffId && (
+                  <th
+                    style={{
+                      textAlign: "center",
+                      padding: "0.35rem 0.5rem",
+                      border: "1px solid #ccc",
+                      background: "#f5f5f5",
+                      minWidth: 70,
+                      fontWeight: "normal",
+                      fontSize: "0.8rem",
+                    }}
+                  >
+                    シフト希望
+                  </th>
+                )}
               </tr>
             </thead>
             <tbody>
               {columnStaff.length === 0 ? (
                 <tr>
-                  <td colSpan={staffId ? (isAdmin ? 5 : 4) : 3} style={{ color: "#888", padding: "0.75rem 0", border: "1px solid #ccc" }}>
+                  <td colSpan={staffId ? (isAdmin ? 6 : 5) : 3} style={{ color: "#888", padding: "0.75rem 0", border: "1px solid #ccc" }}>
                     該当するスタッフがいません。
                   </td>
                 </tr>
@@ -520,6 +566,7 @@ export default async function ShiftsPage({
                       </td>
                       {columnStaff.map((staff) => {
                         const cellShifts = shiftsByStaffAndDate.get(`${staff.id}_${dayKey}`) ?? [];
+                        const pref = preferenceLabel(preferenceByStaffAndDate.get(`${staff.id}_${dayKey}`));
                         return (
                           <td
                             key={staff.id}
@@ -530,6 +577,11 @@ export default async function ShiftsPage({
                               verticalAlign: "top",
                             }}
                           >
+                            {pref && (
+                              <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666", lineHeight: 1 }}>
+                                希望:{pref}
+                              </div>
+                            )}
                             {(() => {
                               const badges = cellShifts.map((shift) => (
                                 <ShiftBadge
@@ -609,6 +661,22 @@ export default async function ShiftsPage({
                             </>
                           );
                         })()}
+                      {staffId && (
+                        <td
+                          style={{
+                            padding: "0.15rem 0.35rem",
+                            border: "1px solid #ddd",
+                            background: dayKey === todayKey ? "#fffbe6" : undefined,
+                          }}
+                        >
+                          <ShiftPreferenceSelect
+                            staffId={staffId}
+                            date={dayKey}
+                            value={preferenceByStaffAndDate.get(`${staffId}_${dayKey}`) ?? ""}
+                            action={upsertShiftPreference}
+                          />
+                        </td>
+                      )}
                     </tr>
                   );
                 })
@@ -656,6 +724,7 @@ export default async function ShiftsPage({
                       {monthlyPay != null ? `¥${Math.round(monthlyPay).toLocaleString("ja-JP")}` : "-"}
                     </td>
                   )}
+                  <td style={{ border: "1px solid #ccc", background: "#f5f5f5" }} />
                 </tr>
               )}
             </tbody>
