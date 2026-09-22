@@ -580,7 +580,7 @@ export default async function ShiftsPage({
                           >
                             {pref && (
                               <div style={{ fontSize: "0.75rem", fontWeight: "bold", color: "#666", lineHeight: 1 }}>
-                                希望:{pref}
+                                {pref}
                               </div>
                             )}
                             {(() => {
