@@ -207,8 +207,7 @@ model DailySales {
   storeId     String
   date        DateTime @db.Date
   cashAmount  Int      @default(0) // 現金売上
-  cardAmount  Int      @default(0) // カード売上
-  otherAmount Int      @default(0) // その他（電子マネー・QR決済など）
+  otherAmount Int      @default(0) // その他（カード・電子マネー・QR決済など）
   note        String?
   createdById String? // 登録した管理者のstaff id
   createdAt   DateTime @default(now())

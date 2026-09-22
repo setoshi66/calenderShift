@@ -72,13 +72,12 @@ export default async function SalesPage({
   const totals = sales.reduce(
     (acc, s) => {
       acc.cash += s.cashAmount;
-      acc.card += s.cardAmount;
       acc.other += s.otherAmount;
       return acc;
     },
-    { cash: 0, card: 0, other: 0 },
+    { cash: 0, other: 0 },
   );
-  const grandTotal = totals.cash + totals.card + totals.other;
+  const grandTotal = totals.cash + totals.other;
 
   const prevMonth = month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
   const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
@@ -135,7 +134,7 @@ export default async function SalesPage({
                 {days.map((day) => {
                   const key = formatDate(day);
                   const existing = salesByDate.get(key);
-                  const total = (existing?.cashAmount ?? 0) + (existing?.cardAmount ?? 0) + (existing?.otherAmount ?? 0);
+                  const total = (existing?.cashAmount ?? 0) + (existing?.otherAmount ?? 0);
                   const dayEvents = eventsByDate.get(key) ?? [];
                   const dayShifts = shiftsByDate.get(key) ?? [];
                   const weekday = day.getUTCDay();
@@ -150,14 +149,10 @@ export default async function SalesPage({
                         <span style={{ color: "#888", fontWeight: "normal" }}>合計 {yen(total)}</span>
                       </div>
 
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                         <label style={{ fontSize: "0.8rem" }}>
                           現金
                           <input type="number" name={`cash_${key}`} min={0} defaultValue={existing?.cashAmount ?? 0} style={fieldStyle} />
-                        </label>
-                        <label style={{ fontSize: "0.8rem" }}>
-                          カード
-                          <input type="number" name={`card_${key}`} min={0} defaultValue={existing?.cardAmount ?? 0} style={fieldStyle} />
                         </label>
                         <label style={{ fontSize: "0.8rem" }}>
                           その他
@@ -188,7 +183,6 @@ export default async function SalesPage({
 
               <div style={{ marginTop: "0.75rem", padding: "0.75rem", background: "#f5f5f5", borderRadius: 8 }}>
                 <div>現金合計: {yen(totals.cash)}</div>
-                <div>カード合計: {yen(totals.card)}</div>
                 <div>その他合計: {yen(totals.other)}</div>
                 <div style={{ fontWeight: "bold" }}>総合計: {yen(grandTotal)}</div>
               </div>
@@ -208,7 +202,7 @@ export default async function SalesPage({
                 </p>
               )}
               {sales.map((s) => {
-                const total = s.cashAmount + s.cardAmount + s.otherAmount;
+                const total = s.cashAmount + s.otherAmount;
                 return (
                   <div key={s.id} style={{ border: "1px solid #ddd", borderRadius: 8, padding: "0.75rem" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
@@ -219,7 +213,7 @@ export default async function SalesPage({
                       <span>{yen(total)}</span>
                     </div>
                     <div style={{ fontSize: "0.85rem", color: "#666", marginTop: "0.25rem" }}>
-                      現金 {yen(s.cashAmount)} / カード {yen(s.cardAmount)} / その他 {yen(s.otherAmount)}
+                      現金 {yen(s.cashAmount)} / その他 {yen(s.otherAmount)}
                     </div>
                     {s.note && <div style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>{s.note}</div>}
                     {canWrite && (
@@ -234,7 +228,6 @@ export default async function SalesPage({
               {sales.length > 0 && (
                 <div style={{ padding: "0.75rem", background: "#f5f5f5", borderRadius: 8 }}>
                   <div>現金合計: {yen(totals.cash)}</div>
-                  <div>カード合計: {yen(totals.card)}</div>
                   <div>その他合計: {yen(totals.other)}</div>
                   <div style={{ fontWeight: "bold" }}>総合計: {yen(grandTotal)}</div>
                 </div>
@@ -275,7 +268,6 @@ export default async function SalesPage({
                   <tr>
                     <th style={thStyle}>日付</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>現金</th>
-                    <th style={{ ...thStyle, textAlign: "right" }}>カード</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>その他</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>合計</th>
                     <th style={thStyle}>メモ</th>
@@ -287,7 +279,7 @@ export default async function SalesPage({
                   {days.map((day) => {
                     const key = formatDate(day);
                     const existing = salesByDate.get(key);
-                    const total = (existing?.cashAmount ?? 0) + (existing?.cardAmount ?? 0) + (existing?.otherAmount ?? 0);
+                    const total = (existing?.cashAmount ?? 0) + (existing?.otherAmount ?? 0);
                     const dayEvents = eventsByDate.get(key) ?? [];
                     const dayShifts = shiftsByDate.get(key) ?? [];
                     return (
@@ -301,15 +293,6 @@ export default async function SalesPage({
                             name={`cash_${key}`}
                             min={0}
                             defaultValue={existing?.cashAmount ?? 0}
-                            style={{ width: "100%", textAlign: "right" }}
-                          />
-                        </td>
-                        <td style={tdStyle}>
-                          <input
-                            type="number"
-                            name={`card_${key}`}
-                            min={0}
-                            defaultValue={existing?.cardAmount ?? 0}
                             style={{ width: "100%", textAlign: "right" }}
                           />
                         </td>
@@ -364,7 +347,6 @@ export default async function SalesPage({
                   <tr>
                     <td style={{ ...tdStyle, fontWeight: "bold" }}>合計</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.cash)}</td>
-                    <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.card)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.other)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(grandTotal)}</td>
                     <td style={tdStyle} />
@@ -388,7 +370,6 @@ export default async function SalesPage({
                 <th style={thStyle}>日付</th>
                 {showStoreName && <th style={thStyle}>店舗</th>}
                 <th style={{ ...thStyle, textAlign: "right" }}>現金</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>カード</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>その他</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>合計</th>
                 <th style={thStyle}>メモ</th>
@@ -398,19 +379,18 @@ export default async function SalesPage({
             <tbody>
               {sales.length === 0 && (
                 <tr>
-                  <td colSpan={showStoreName ? 8 : 7} style={{ ...tdStyle, color: "#888" }}>
+                  <td colSpan={showStoreName ? 7 : 6} style={{ ...tdStyle, color: "#888" }}>
                     売上データはありません。1店舗のみを選択するとExcel風の一括入力ができます。
                   </td>
                 </tr>
               )}
               {sales.map((s) => {
-                const total = s.cashAmount + s.cardAmount + s.otherAmount;
+                const total = s.cashAmount + s.otherAmount;
                 return (
                   <tr key={s.id}>
                     <td style={tdStyle}>{formatDate(s.date)}</td>
                     {showStoreName && <td style={tdStyle}>{s.store.name}</td>}
                     <td style={{ ...tdStyle, textAlign: "right" }}>{yen(s.cashAmount)}</td>
-                    <td style={{ ...tdStyle, textAlign: "right" }}>{yen(s.cardAmount)}</td>
                     <td style={{ ...tdStyle, textAlign: "right" }}>{yen(s.otherAmount)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(total)}</td>
                     <td style={tdStyle}>{s.note}</td>
@@ -433,7 +413,6 @@ export default async function SalesPage({
                     合計
                   </td>
                   <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.cash)}</td>
-                  <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.card)}</td>
                   <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.other)}</td>
                   <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(grandTotal)}</td>
                   <td style={tdStyle} />

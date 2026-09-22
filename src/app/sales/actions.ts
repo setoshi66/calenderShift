@@ -25,19 +25,18 @@ export async function bulkUpsertSales(formData: FormData) {
 
   const ops = dates.map((dateStr) => {
     const cashAmount = parseAmount(formData.get(`cash_${dateStr}`));
-    const cardAmount = parseAmount(formData.get(`card_${dateStr}`));
     const otherAmount = parseAmount(formData.get(`other_${dateStr}`));
     const note = String(formData.get(`note_${dateStr}`) ?? "").trim() || null;
     const date = new Date(dateStr);
-    const isEmpty = cashAmount === 0 && cardAmount === 0 && otherAmount === 0 && !note;
+    const isEmpty = cashAmount === 0 && otherAmount === 0 && !note;
 
     if (isEmpty) {
       return prisma.dailySales.deleteMany({ where: { storeId, date } });
     }
     return prisma.dailySales.upsert({
       where: { storeId_date: { storeId, date } },
-      create: { storeId, date, cashAmount, cardAmount, otherAmount, note, createdById: session.user.id },
-      update: { cashAmount, cardAmount, otherAmount, note },
+      create: { storeId, date, cashAmount, otherAmount, note, createdById: session.user.id },
+      update: { cashAmount, otherAmount, note },
     });
   });
 
