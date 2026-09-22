@@ -106,11 +106,18 @@ export default async function ShiftsPage({
 
   const selectedStores = stores.filter((s) => storeIds.includes(s.id));
   const filteredStaffHourlyWage = staffId ? (columnStaff[0]?.hourlyWage ?? null) : null;
-  const monthlyHours = staffId
-    ? shifts.filter((s) => s.status !== "CANCELLED").reduce((sum, s) => sum + shiftHours(s.startTime, s.endTime, s.breakMinutes), 0)
+  // staffId未指定（全スタッフ）の場合も含め、表示中のシフト全体の合計を常に算出する。
+  const monthlyHours = shifts
+    .filter((s) => s.status !== "CANCELLED")
+    .reduce((sum, s) => sum + shiftHours(s.startTime, s.endTime, s.breakMinutes), 0);
+  const monthlyPay = isAdmin
+    ? shifts
+        .filter((s) => s.status !== "CANCELLED")
+        .reduce((sum, s) => {
+          const wage = s.staff.hourlyWage;
+          return wage != null ? sum + shiftHours(s.startTime, s.endTime, s.breakMinutes) * wage : sum;
+        }, 0)
     : null;
-  const monthlyPay =
-    isAdmin && monthlyHours !== null && filteredStaffHourlyWage != null ? monthlyHours * filteredStaffHourlyWage : null;
 
   const prevMonth = month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
   const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
@@ -156,17 +163,15 @@ export default async function ShiftsPage({
             />
           </div>
 
-          {monthlyHours !== null && (
-            <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", textAlign: "right" }}>
-              今月の勤務時間合計: <strong>{monthlyHours.toFixed(1)}時間</strong>
-              {isAdmin && (
-                <>
-                  {" / 報酬合計: "}
-                  <strong>{monthlyPay != null ? `¥${Math.round(monthlyPay).toLocaleString("ja-JP")}` : "-"}</strong>
-                </>
-              )}
-            </div>
-          )}
+          <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", textAlign: "right" }}>
+            今月の勤務時間合計: <strong>{monthlyHours.toFixed(1)}時間</strong>
+            {isAdmin && (
+              <>
+                {" / 報酬合計: "}
+                <strong>{`¥${Math.round(monthlyPay ?? 0).toLocaleString("ja-JP")}`}</strong>
+              </>
+            )}
+          </div>
 
           <div style={{ marginTop: "1rem", display: "flex", flexDirection: "column", gap: "0.6rem" }}>
             {days.map((day) => {
@@ -318,6 +323,16 @@ export default async function ShiftsPage({
             extraParams={{ year: String(year), month: String(month) }}
             storeIds={storeIds}
           />
+        </div>
+
+        <div style={{ marginTop: "0.5rem", fontSize: "0.9rem", textAlign: "right" }}>
+          今月の勤務時間合計: <strong>{monthlyHours.toFixed(1)}時間</strong>
+          {isAdmin && (
+            <>
+              {" / 報酬合計: "}
+              <strong>{`¥${Math.round(monthlyPay ?? 0).toLocaleString("ja-JP")}`}</strong>
+            </>
+          )}
         </div>
 
         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginTop: "1rem" }}>
@@ -625,7 +640,7 @@ export default async function ShiftsPage({
                       fontSize: "0.8rem",
                     }}
                   >
-                    {(monthlyHours ?? 0).toFixed(1)}時間
+                    {monthlyHours.toFixed(1)}時間
                   </td>
                   {isAdmin && (
                     <td

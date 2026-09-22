@@ -1,5 +1,6 @@
 import { google } from "googleapis";
 import { prisma } from "@/lib/prisma";
+import { jstDateAndTimeToUtc } from "@/lib/date";
 
 function getCalendarClient() {
   const auth = new google.auth.JWT({
@@ -11,10 +12,7 @@ function getCalendarClient() {
 }
 
 function toDateTime(workDate: Date, time: string, timezone: string) {
-  const [hour, minute] = time.split(":").map(Number);
-  const d = new Date(workDate);
-  d.setUTCHours(hour, minute, 0, 0);
-  return { dateTime: d.toISOString(), timeZone: timezone };
+  return { dateTime: jstDateAndTimeToUtc(workDate, time).toISOString(), timeZone: timezone };
 }
 
 // 確定シフトを店舗の共有Googleカレンダーへ反映する（片方向: システム → Google）

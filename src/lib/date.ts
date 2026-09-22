@@ -32,6 +32,15 @@ export function shiftHours(startTime: string, endTime: string, breakMinutes: num
   return Math.max(minutes, 0) / 60;
 }
 
+// 暦日（workDate: UTC深夜0時として保存されたDate）とJST壁時計時刻（"HH:mm"）から、
+// 正しいUTC基準のDateを組み立てる。シフトのstartTime/endTimeはJST壁時計として扱う。
+export function jstDateAndTimeToUtc(workDate: Date, time: string): Date {
+  const [hour, minute] = time.split(":").map(Number);
+  return new Date(
+    Date.UTC(workDate.getUTCFullYear(), workDate.getUTCMonth(), workDate.getUTCDate(), hour - 9, minute),
+  );
+}
+
 // <input type="datetime-local"> の値（"YYYY-MM-DDTHH:mm"、タイムゾーン情報なし）を
 // JSTの壁時計時刻として解釈し、UTC基準のDateに変換する。
 // サーバーの実行環境のローカルタイムゾーンに依存させないための変換。
