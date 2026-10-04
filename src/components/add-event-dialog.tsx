@@ -86,6 +86,25 @@ export function AddEventDialog({
           }}
         >
           {children}
+          <button
+            type="button"
+            onClick={open}
+            title="イベントを追加"
+            style={{
+              display: "block",
+              width: "100%",
+              textAlign: "left",
+              fontSize: "0.75rem",
+              color: "#0969da",
+              background: "none",
+              border: "none",
+              padding: "0.05rem 0.3rem",
+              margin: 0,
+              cursor: "pointer",
+            }}
+          >
+            ＋イベント
+          </button>
         </div>
       ) : (
         <button
