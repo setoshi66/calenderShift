@@ -5,6 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { Nav } from "@/components/nav";
 import { StoreFilterChips } from "@/components/store-filter-chips";
 import { PayrollHoursInputs } from "@/components/payroll-hours-inputs";
+import { PayslipDialog } from "@/components/payslip-dialog";
 import { thStyle, tdStyle } from "@/lib/table-styles";
 import { shiftHours, todayInJst } from "@/lib/date";
 import { appendStoreIdsToParams, resolveStoreIds } from "@/lib/array";
@@ -145,12 +146,13 @@ export default async function PayrollPage({
                   <th style={{ ...thStyle, textAlign: "right" }}>歩合4</th>
                   <th style={{ ...thStyle, textAlign: "right" }}>控除</th>
                   <th style={{ ...thStyle, textAlign: "right" }}>報酬合計</th>
+                  <th style={thStyle} />
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={12} style={{ ...tdStyle, color: "#888" }}>
+                    <td colSpan={13} style={{ ...tdStyle, color: "#888" }}>
                       該当するスタッフがいません。
                     </td>
                   </tr>
@@ -185,6 +187,24 @@ export default async function PayrollPage({
                         <input type="number" name={`deduction_${r.staff.id}`} defaultValue={r.deduction} style={{ width: "100%", textAlign: "right" }} />
                       </td>
                       <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(r.totalPay)}</td>
+                      <td style={tdStyle}>
+                        <PayslipDialog
+                          staffName={r.staff.name}
+                          year={year}
+                          month={month}
+                          shiftHoursTotal={r.shiftHoursTotal}
+                          extraHours={r.extraHours}
+                          totalHours={r.totalHours}
+                          hourlyWage={r.staff.hourlyWage}
+                          workPay={r.workPay}
+                          commission1={r.commission1}
+                          commission2={r.commission2}
+                          commission3={r.commission3}
+                          commission4={r.commission4}
+                          deduction={r.deduction}
+                          totalPay={r.totalPay}
+                        />
+                      </td>
                     </tr>
                   ))
                 )}
@@ -204,6 +224,7 @@ export default async function PayrollPage({
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.commission4)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.deduction)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.totalPay)}</td>
+                    <td style={tdStyle} />
                   </tr>
                 </tfoot>
               )}
