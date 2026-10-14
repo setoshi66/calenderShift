@@ -4,7 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { Nav } from "@/components/nav";
 import { thStyle, tdStyle } from "@/lib/table-styles";
 import { getViewMode } from "@/lib/view-mode";
-import { createStaff, toggleStaffActive } from "./actions";
+import { createStaff, toggleStaffActive, togglePersonalCalendarSync } from "./actions";
 
 const ROLE_LABEL: Record<string, string> = {
   ADMIN: "管理者",
@@ -39,6 +39,7 @@ export default async function StaffPage() {
               <th style={thStyle}>所属店舗</th>
               {isAdmin && <th style={{ ...thStyle, textAlign: "right" }}>時給</th>}
               <th style={thStyle}>状態</th>
+              <th style={thStyle}>個人カレンダー反映</th>
               {canWrite && <th style={thStyle} />}
             </tr>
           </thead>
@@ -55,6 +56,17 @@ export default async function StaffPage() {
                   </td>
                 )}
                 <td style={tdStyle}>{staff.isActive ? "有効" : "無効"}</td>
+                <td style={tdStyle}>
+                  {session?.user.id === staff.id ? (
+                    <form action={togglePersonalCalendarSync}>
+                      <input type="hidden" name="id" value={staff.id} />
+                      <input type="hidden" name="current" value={String(staff.syncToPersonalCalendar)} />
+                      <button type="submit">{staff.syncToPersonalCalendar ? "ON（クリックでOFF）" : "OFF（クリックでON）"}</button>
+                    </form>
+                  ) : (
+                    staff.syncToPersonalCalendar ? "ON" : "OFF"
+                  )}
+                </td>
                 {canWrite && (
                   <td style={{ ...tdStyle, display: "flex", gap: "0.5rem" }}>
                     <Link href={`/staff/${staff.id}/edit`}>編集</Link>
@@ -69,6 +81,12 @@ export default async function StaffPage() {
             ))}
           </tbody>
         </table>
+
+        <p style={{ fontSize: "0.8rem", color: "#666", marginTop: "0.5rem" }}>
+          個人カレンダー反映：ONにすると確定シフトが自分のGoogleカレンダーに反映されます（店舗の共有カレンダーには反映されません）。
+          事前にご自身のGoogleカレンダーの共有設定で <code>calendar-shift@calendershift.iam.gserviceaccount.com</code> に
+          「予定の変更権限」を付与してください。
+        </p>
 
         {canWrite && (
           <section style={{ marginTop: "2rem" }}>

@@ -82,6 +82,7 @@ model Staff {
   hourlyWage     Int? // 時給（円）。管理者ロールのみ設定・閲覧可能
   role           StaffRole @default(STAFF)
   isActive       Boolean   @default(true)
+  syncToPersonalCalendar Boolean @default(false) // 確定シフトを本人のGoogleカレンダー（emailのカレンダー）へ反映するか。本人のみ切替可能
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
 

@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/prisma";
 import { assertWriteAccess } from "@/lib/api-auth";
+import { auth } from "@/lib/auth";
 
 const VALID_ROLES = new Set(["ADMIN", "STORE_MANAGER", "STAFF"]);
 
@@ -109,5 +110,19 @@ export async function toggleStaffActive(formData: FormData) {
   if (!id) throw new Error("スタッフIDが不正です");
 
   await prisma.staff.update({ where: { id }, data: { isActive: !isActive } });
+  revalidatePath("/staff");
+}
+
+// 個人のGoogleカレンダーへのシフト反映設定。本人のみ切替可能（管理者でも他人の設定は変更不可）。
+export async function togglePersonalCalendarSync(formData: FormData) {
+  const session = await auth();
+  if (!session?.user) throw new Error("ログインが必要です");
+
+  const id = String(formData.get("id") ?? "");
+  const current = formData.get("current") === "true";
+  if (!id) throw new Error("スタッフIDが不正です");
+  if (session.user.id !== id) throw new Error("この操作を行う権限がありません");
+
+  await prisma.staff.update({ where: { id }, data: { syncToPersonalCalendar: !current } });
   revalidatePath("/staff");
 }

@@ -103,6 +103,96 @@ export async function removeShiftFromGoogleCalendar(shiftId: string) {
   await prisma.googleCalendarSync.delete({ where: { shiftId } });
 }
 
+// 確定シフトを本人のGoogleカレンダー（staff.emailのカレンダー）へ反映する。
+// 本人が設定（デフォルトOFF）で有効化し、サービスアカウントと自分のカレンダーを共有している場合のみ同期される。
+// 店舗の共有カレンダーへは反映しない（syncShiftToGoogleCalendarは呼ばない）。
+export async function syncShiftToPersonalCalendar(shiftId: string) {
+  const shift = await prisma.shift.findUniqueOrThrow({
+    where: { id: shiftId },
+    include: { staff: true, store: true, calendarSync: true },
+  });
+
+  if (!shift.staff.syncToPersonalCalendar || !shift.staff.email) {
+    return; // 個人カレンダー同期が無効、またはメール未設定
+  }
+
+  const calendar = getCalendarClient();
+  const event = {
+    summary: shift.store.name,
+    description: shift.note ?? undefined,
+    start: toDateTime(shift.workDate, shift.startTime, shift.store.timezone),
+    end: toDateTime(shift.workDate, shift.endTime, shift.store.timezone),
+  };
+
+  try {
+    let googleEventId = shift.calendarSync?.googleEventId ?? null;
+
+    if (googleEventId) {
+      await calendar.events.update({
+        calendarId: shift.staff.email,
+        eventId: googleEventId,
+        requestBody: event,
+      });
+    } else {
+      const res = await calendar.events.insert({
+        calendarId: shift.staff.email,
+        requestBody: event,
+      });
+      googleEventId = res.data.id ?? null;
+    }
+
+    await prisma.googleCalendarSync.upsert({
+      where: { shiftId },
+      create: {
+        shiftId,
+        googleEventId,
+        syncStatus: "SUCCESS",
+        syncedAt: new Date(),
+      },
+      update: {
+        googleEventId,
+        syncStatus: "SUCCESS",
+        syncedAt: new Date(),
+        errorMessage: null,
+      },
+    });
+  } catch (error) {
+    await prisma.googleCalendarSync.upsert({
+      where: { shiftId },
+      create: {
+        shiftId,
+        syncStatus: "FAILED",
+        errorMessage: error instanceof Error ? error.message : String(error),
+      },
+      update: {
+        syncStatus: "FAILED",
+        errorMessage: error instanceof Error ? error.message : String(error),
+      },
+    });
+    throw error;
+  }
+}
+
+// シフトのキャンセル・削除時に本人のGoogleカレンダー側のイベントも削除する
+export async function removeShiftFromPersonalCalendar(shiftId: string) {
+  const shift = await prisma.shift.findUnique({
+    where: { id: shiftId },
+    include: { staff: true, calendarSync: true },
+  });
+
+  if (!shift?.calendarSync?.googleEventId || !shift.staff.email) {
+    return;
+  }
+
+  const calendar = getCalendarClient();
+  await calendar.events.delete({
+    calendarId: shift.staff.email,
+    eventId: shift.calendarSync.googleEventId,
+  });
+
+  await prisma.googleCalendarSync.delete({ where: { shiftId } });
+}
+
 // 店舗イベントを店舗の共有Googleカレンダーへ反映する（片方向: システム → Google）
 export async function syncStoreEventToGoogleCalendar(storeEventId: string) {
   const storeEvent = await prisma.storeEvent.findUniqueOrThrow({

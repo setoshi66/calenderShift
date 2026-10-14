@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { assertWriteAccess } from "@/lib/api-auth";
-import { removeShiftFromGoogleCalendar, syncShiftToGoogleCalendar } from "@/lib/google-calendar";
+import { removeShiftFromPersonalCalendar, syncShiftToPersonalCalendar } from "@/lib/google-calendar";
 
 export async function createShift(formData: FormData) {
   const session = await assertWriteAccess();
@@ -37,7 +37,7 @@ export async function createShift(formData: FormData) {
 
   if (shift.status === "CONFIRMED") {
     try {
-      await syncShiftToGoogleCalendar(shift.id);
+      await syncShiftToPersonalCalendar(shift.id);
     } catch {
       // 同期失敗はgoogle_calendar_syncsに記録済み
     }
@@ -73,9 +73,9 @@ export async function updateShift(formData: FormData) {
 
   try {
     if (status === "CONFIRMED") {
-      await syncShiftToGoogleCalendar(id);
+      await syncShiftToPersonalCalendar(id);
     } else if (status === "CANCELLED") {
-      await removeShiftFromGoogleCalendar(id);
+      await removeShiftFromPersonalCalendar(id);
     }
   } catch {
     // 同期失敗はgoogle_calendar_syncsに記録済み
@@ -94,7 +94,7 @@ export async function deleteShift(formData: FormData) {
   if (!id) throw new Error("パラメータが不正です");
 
   try {
-    await removeShiftFromGoogleCalendar(id);
+    await removeShiftFromPersonalCalendar(id);
   } catch {
     // カレンダー側の削除に失敗してもシフト自体の削除は続行する
   }
