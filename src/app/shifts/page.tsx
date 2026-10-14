@@ -145,7 +145,7 @@ export default async function ShiftsPage({
   if (viewMode === "sp") {
     return (
       <>
-        <Nav userEmail={session?.user?.email} viewMode={viewMode} title="シフト" />
+        <Nav userEmail={session?.user?.email} viewMode={viewMode} title="シフト" isAdmin={isAdmin} />
         <main style={{ padding: "1rem", maxWidth: 480, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Link href={monthLink(prevMonth.year, prevMonth.month, storeIds, staffId)} style={{ fontSize: "1.4rem", padding: "0.4rem 0.7rem" }}>
@@ -331,7 +331,7 @@ export default async function ShiftsPage({
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="シフト" />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="シフト" isAdmin={isAdmin} />
       <main style={{ padding: "2rem", maxWidth: "100%", margin: "0 auto" }}>
         <div style={{ marginTop: "1rem" }}>
           <div style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>店舗</div>

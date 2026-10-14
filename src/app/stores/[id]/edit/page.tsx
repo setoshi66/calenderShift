@@ -13,7 +13,7 @@ export default async function EditStorePage({ params }: { params: Promise<{ id: 
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="店舗を編集" />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="店舗を編集" isAdmin={session?.user.role === "ADMIN"} />
       <main style={{ padding: "2rem", maxWidth: 480, margin: "0 auto" }}>
         <form action={updateStore} style={{ display: "grid", gap: "0.75rem", marginTop: "1.5rem" }}>
           <input type="hidden" name="id" value={store.id} />

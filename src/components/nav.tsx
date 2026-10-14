@@ -14,16 +14,21 @@ const LINKS = [
   { href: "/staff", label: "スタッフ" },
 ];
 
+const ADMIN_LINKS = [{ href: "/payroll", label: "給与計算" }];
+
 export function Nav({
   userEmail,
   viewMode,
   title,
+  isAdmin,
 }: {
   userEmail?: string | null;
   viewMode: ViewMode;
   title?: string;
+  isAdmin?: boolean;
 }) {
   const [open, setOpen] = useState(false);
+  const links = isAdmin ? [...LINKS, ...ADMIN_LINKS] : LINKS;
 
   return (
     <nav
@@ -83,7 +88,7 @@ export function Nav({
             }}
           >
             <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem" }}>
-              {LINKS.map((link) => (
+              {links.map((link) => (
                 <Link key={link.href} href={link.href} onClick={() => setOpen(false)}>
                   {link.label}
                 </Link>

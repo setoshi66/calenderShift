@@ -21,7 +21,7 @@ export default async function EditStaffPage({ params }: { params: Promise<{ id: 
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="スタッフを編集" />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="スタッフを編集" isAdmin={isAdmin} />
       <main style={{ padding: "2rem", maxWidth: 480, margin: "0 auto" }}>
         <form action={updateStaff} style={{ display: "grid", gap: "0.75rem", marginTop: "1.5rem" }}>
           <input type="hidden" name="id" value={staff.id} />

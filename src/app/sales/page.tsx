@@ -104,7 +104,7 @@ export default async function SalesPage({
 
     return (
       <>
-        <Nav userEmail={session?.user?.email} viewMode={viewMode} title="売上" />
+        <Nav userEmail={session?.user?.email} viewMode={viewMode} title="売上" isAdmin={session?.user.role === "ADMIN"} />
         <main style={{ padding: "1rem", maxWidth: 480, margin: "0 auto" }}>
           <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
             <Link href={monthLink(prevMonth.year, prevMonth.month, storeIds)} style={{ fontSize: "1.4rem", padding: "0.4rem 0.7rem" }}>
@@ -241,7 +241,7 @@ export default async function SalesPage({
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="売上" />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="売上" isAdmin={session?.user.role === "ADMIN"} />
       <main style={{ padding: "2rem", maxWidth: 1080, margin: "0 auto" }}>
         <div style={{ marginTop: "1rem" }}>
           <div style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>

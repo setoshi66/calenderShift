@@ -16,7 +16,7 @@ export default async function StoresPage() {
 
   return (
     <>
-      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="店舗" />
+      <Nav userEmail={session?.user?.email} viewMode={viewMode} title="店舗" isAdmin={session?.user.role === "ADMIN"} />
       <main style={{ padding: "2rem", maxWidth: 960, margin: "0 auto" }}>
         <table style={{ width: "100%", borderCollapse: "collapse", marginTop: "1.5rem" }}>
           <thead>
