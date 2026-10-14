@@ -164,7 +164,7 @@ export function ShiftBadge({
             状態
             <select name="status" defaultValue={shift.status} style={{ width: "100%" }}>
               <option value="DRAFT">下書き</option>
-              <option value="CONFIRMED">確定（Googleカレンダーへ即反映）</option>
+              <option value="CONFIRMED">確定</option>
               <option value="CANCELLED">取消</option>
             </select>
           </label>

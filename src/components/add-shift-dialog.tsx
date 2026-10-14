@@ -173,7 +173,7 @@ export function AddShiftDialog({
             状態
             <select name="status" defaultValue="CONFIRMED" style={{ width: "100%" }}>
               <option value="DRAFT">下書き</option>
-              <option value="CONFIRMED">確定（Googleカレンダーへ即反映）</option>
+              <option value="CONFIRMED">確定</option>
             </select>
           </label>
           {error && <p style={{ color: "red", margin: 0 }}>{error}</p>}
