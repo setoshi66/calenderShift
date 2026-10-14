@@ -30,11 +30,12 @@ export async function bulkUpsertPayroll(formData: FormData) {
     const commission2 = Math.round(parseNumber(formData.get(`commission2_${staffId}`)));
     const commission3 = Math.round(parseNumber(formData.get(`commission3_${staffId}`)));
     const commission4 = Math.round(parseNumber(formData.get(`commission4_${staffId}`)));
+    const deduction = Math.round(parseNumber(formData.get(`deduction_${staffId}`)));
 
     return prisma.payrollEntry.upsert({
       where: { staffId_month: { staffId, month } },
-      create: { staffId, month, extraHours, totalHours, commission1, commission2, commission3, commission4 },
-      update: { extraHours, totalHours, commission1, commission2, commission3, commission4 },
+      create: { staffId, month, extraHours, totalHours, commission1, commission2, commission3, commission4, deduction },
+      update: { extraHours, totalHours, commission1, commission2, commission3, commission4, deduction },
     });
   });
 

@@ -82,9 +82,10 @@ export default async function PayrollPage({
     const commission2 = existing?.commission2 ?? 0;
     const commission3 = existing?.commission3 ?? 0;
     const commission4 = existing?.commission4 ?? 0;
+    const deduction = existing?.deduction ?? 0;
     const workPay = staff.hourlyWage != null ? totalHours * staff.hourlyWage : 0;
-    const totalPay = workPay + commission1 + commission2 + commission3 + commission4;
-    return { staff, shiftHoursTotal, extraHours, totalHours, commission1, commission2, commission3, commission4, workPay, totalPay };
+    const totalPay = workPay + commission1 + commission2 + commission3 + commission4 - deduction;
+    return { staff, shiftHoursTotal, extraHours, totalHours, commission1, commission2, commission3, commission4, deduction, workPay, totalPay };
   });
 
   const totals = rows.reduce(
@@ -96,10 +97,11 @@ export default async function PayrollPage({
       acc.commission2 += r.commission2;
       acc.commission3 += r.commission3;
       acc.commission4 += r.commission4;
+      acc.deduction += r.deduction;
       acc.totalPay += r.totalPay;
       return acc;
     },
-    { shiftHours: 0, totalHours: 0, workPay: 0, commission1: 0, commission2: 0, commission3: 0, commission4: 0, totalPay: 0 },
+    { shiftHours: 0, totalHours: 0, workPay: 0, commission1: 0, commission2: 0, commission3: 0, commission4: 0, deduction: 0, totalPay: 0 },
   );
 
   const prevMonth = month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
@@ -141,13 +143,14 @@ export default async function PayrollPage({
                   <th style={{ ...thStyle, textAlign: "right" }}>歩合2</th>
                   <th style={{ ...thStyle, textAlign: "right" }}>歩合3</th>
                   <th style={{ ...thStyle, textAlign: "right" }}>歩合4</th>
+                  <th style={{ ...thStyle, textAlign: "right" }}>控除</th>
                   <th style={{ ...thStyle, textAlign: "right" }}>報酬合計</th>
                 </tr>
               </thead>
               <tbody>
                 {rows.length === 0 ? (
                   <tr>
-                    <td colSpan={11} style={{ ...tdStyle, color: "#888" }}>
+                    <td colSpan={12} style={{ ...tdStyle, color: "#888" }}>
                       該当するスタッフがいません。
                     </td>
                   </tr>
@@ -178,6 +181,9 @@ export default async function PayrollPage({
                       <td style={tdStyle}>
                         <input type="number" name={`commission4_${r.staff.id}`} defaultValue={r.commission4} style={{ width: "100%", textAlign: "right" }} />
                       </td>
+                      <td style={tdStyle}>
+                        <input type="number" name={`deduction_${r.staff.id}`} defaultValue={r.deduction} style={{ width: "100%", textAlign: "right" }} />
+                      </td>
                       <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(r.totalPay)}</td>
                     </tr>
                   ))
@@ -196,6 +202,7 @@ export default async function PayrollPage({
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.commission2)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.commission3)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.commission4)}</td>
+                    <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.deduction)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.totalPay)}</td>
                   </tr>
                 </tfoot>
@@ -212,7 +219,8 @@ export default async function PayrollPage({
 
         <p style={{ fontSize: "0.8rem", color: "#666", marginTop: "0.75rem" }}>
           勤務時間(合計)は初期値としてシフト+追加の合計が入ります（追加を変更すると自動的に再計算されますが、直接書き換えることもできます）。
-          時給が未設定のスタッフは勤務報酬が0円になります。「勤務報酬」「報酬合計」は保存済みの値から計算した表示で、保存するまで更新されません。
+          時給が未設定のスタッフは勤務報酬が0円になります。報酬合計は勤務報酬+歩合1〜4-控除で計算されます。
+          「勤務報酬」「報酬合計」は保存済みの値から計算した表示で、保存するまで更新されません。
         </p>
       </main>
     </>

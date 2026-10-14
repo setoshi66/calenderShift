@@ -105,6 +105,7 @@ model PayrollEntry {
   commission2 Int      @default(0) // 歩合2
   commission3 Int      @default(0) // 歩合3
   commission4 Int      @default(0) // 歩合4
+  deduction   Int      @default(0) // 控除
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
