@@ -112,7 +112,7 @@ export default async function PayrollPage({
   return (
     <>
       <Nav userEmail={session?.user?.email} viewMode={viewMode} title="給与計算" isAdmin />
-      <main style={{ padding: "2rem", maxWidth: 1200, margin: "0 auto" }}>
+      <main style={{ padding: "2rem", maxWidth: "100%", margin: "0 auto" }}>
         <div style={{ marginTop: "1rem" }}>
           <div style={{ fontSize: "0.85rem", marginBottom: "0.25rem" }}>店舗</div>
           <StoreFilterChips stores={stores} storeIds={storeIds} year={year} month={month} basePath="/payroll" />
@@ -131,7 +131,7 @@ export default async function PayrollPage({
           <input type="hidden" name="staffIds" value={rows.map((r) => r.staff.id).join(",")} />
 
           <div style={{ overflowX: "auto" }}>
-            <table style={{ width: "100%", borderCollapse: "collapse" }}>
+            <table style={{ width: "100%", borderCollapse: "collapse", whiteSpace: "nowrap" }}>
               <thead>
                 <tr>
                   <th style={thStyle}>氏名</th>
