@@ -89,8 +89,30 @@ model Staff {
   storeAssignments StaffStoreAssignment[]
   shifts           Shift[]
   shiftPreferences ShiftPreference[]
+  payrollEntries   PayrollEntry[]
 
   @@map("staff")
+}
+
+// 給与計算の月次手入力項目（勤務時間の追加・上書き、歩合）。管理者のみ編集可能。
+model PayrollEntry {
+  id          String   @id @default(cuid())
+  staffId     String
+  month       DateTime @db.Date // 対象月の1日
+  extraHours  Float    @default(0) // 勤務時間(追加)
+  totalHours  Float    @default(0) // 勤務時間(合計)。シフト+追加が初期値だが上書き可能
+  commission1 Int      @default(0) // 歩合1
+  commission2 Int      @default(0) // 歩合2
+  commission3 Int      @default(0) // 歩合3
+  commission4 Int      @default(0) // 歩合4
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  staff Staff @relation(fields: [staffId], references: [id], onDelete: Cascade)
+
+  @@unique([staffId, month])
+  @@index([month])
+  @@map("payroll_entries")
 }
 
 // シフト希望（○/△/✕）。日単位・スタッフ単位で誰でも編集可能。
