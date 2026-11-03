@@ -227,15 +227,19 @@ model StoreEventCalendarSync {
 
 // 日次売上（店舗・日付ごとに1件、支払方法別の内訳を持つ）
 model DailySales {
-  id          String   @id @default(cuid())
-  storeId     String
-  date        DateTime @db.Date
-  cashAmount  Int      @default(0) // 現金売上
-  otherAmount Int      @default(0) // その他（カード・電子マネー・QR決済など）
-  note        String?
-  createdById String? // 登録した管理者のstaff id
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id                   String   @id @default(cuid())
+  storeId              String
+  date                 DateTime @db.Date
+  cashAmount           Int      @default(0) // 現金売上
+  otherAmount          Int      @default(0) // その他（カード・電子マネー・QR決済など）
+  tokenAmount          Int      @default(0) // トークン売上（売上に準じるが個別集計）
+  transferWalletAmount Int      @default(0) // 振込財布へ
+  purchaseWalletAmount Int      @default(0) // 買出財布へ
+  actualCashAmount     Int? // 実際現金有高（未入力はnull）
+  note                 String?
+  createdById          String? // 登録した管理者のstaff id
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
 
   store Store @relation(fields: [storeId], references: [id], onDelete: Cascade)
 

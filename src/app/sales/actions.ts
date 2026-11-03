@@ -10,6 +10,14 @@ function parseAmount(value: FormDataEntryValue | null): number {
   return Math.round(n);
 }
 
+// 実際現金有高は未入力(null)を許容する。
+function parseNullableAmount(value: FormDataEntryValue | null): number | null {
+  if (value === null || String(value).trim() === "") return null;
+  const n = Number(value);
+  if (!Number.isFinite(n) || n < 0) throw new Error("金額は0以上の数値で入力してください");
+  return Math.round(n);
+}
+
 // Excel風グリッドからの一括保存。1店舗・複数日付分をまとめて登録/更新/削除する。
 // 各日の金額・メモがすべて空の場合はその日のレコードを削除する。
 export async function bulkUpsertSales(formData: FormData) {
@@ -26,17 +34,39 @@ export async function bulkUpsertSales(formData: FormData) {
   const ops = dates.map((dateStr) => {
     const cashAmount = parseAmount(formData.get(`cash_${dateStr}`));
     const otherAmount = parseAmount(formData.get(`other_${dateStr}`));
+    const tokenAmount = parseAmount(formData.get(`token_${dateStr}`));
+    const transferWalletAmount = parseAmount(formData.get(`transferWallet_${dateStr}`));
+    const purchaseWalletAmount = parseAmount(formData.get(`purchaseWallet_${dateStr}`));
+    const actualCashAmount = parseNullableAmount(formData.get(`actualCash_${dateStr}`));
     const note = String(formData.get(`note_${dateStr}`) ?? "").trim() || null;
     const date = new Date(dateStr);
-    const isEmpty = cashAmount === 0 && otherAmount === 0 && !note;
+    const isEmpty =
+      cashAmount === 0 &&
+      otherAmount === 0 &&
+      tokenAmount === 0 &&
+      transferWalletAmount === 0 &&
+      purchaseWalletAmount === 0 &&
+      actualCashAmount === null &&
+      !note;
 
     if (isEmpty) {
       return prisma.dailySales.deleteMany({ where: { storeId, date } });
     }
     return prisma.dailySales.upsert({
       where: { storeId_date: { storeId, date } },
-      create: { storeId, date, cashAmount, otherAmount, note, createdById: session.user.id },
-      update: { cashAmount, otherAmount, note },
+      create: {
+        storeId,
+        date,
+        cashAmount,
+        otherAmount,
+        tokenAmount,
+        transferWalletAmount,
+        purchaseWalletAmount,
+        actualCashAmount,
+        note,
+        createdById: session.user.id,
+      },
+      update: { cashAmount, otherAmount, tokenAmount, transferWalletAmount, purchaseWalletAmount, actualCashAmount, note },
     });
   });
 
