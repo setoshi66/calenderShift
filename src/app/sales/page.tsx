@@ -14,6 +14,11 @@ function yen(n: number) {
   return `¥${Math.round(n).toLocaleString("ja-JP")}`;
 }
 
+// トークンは円ではないため単位をつけない
+function num(n: number) {
+  return Math.round(n).toLocaleString("ja-JP");
+}
+
 function monthLink(year: number, month: number, storeIds: string[]) {
   const q = new URLSearchParams({ year: String(year), month: String(month) });
   appendStoreIdsToParams(q, storeIds);
@@ -87,7 +92,7 @@ export default async function SalesPage({
     },
     { cash: 0, other: 0, token: 0, transferWallet: 0, purchaseWallet: 0 },
   );
-  const grandTotal = totals.cash + totals.other + totals.token;
+  const grandTotal = totals.cash + totals.other;
 
   const prevMonth = month === 1 ? { year: year - 1, month: 12 } : { year, month: month - 1 };
   const nextMonth = month === 12 ? { year: year + 1, month: 1 } : { year, month: month + 1 };
@@ -174,7 +179,7 @@ export default async function SalesPage({
                 {days.map((day) => {
                   const key = formatDate(day);
                   const existing = salesByDate.get(key);
-                  const total = (existing?.cashAmount ?? 0) + (existing?.otherAmount ?? 0) + (existing?.tokenAmount ?? 0);
+                  const total = (existing?.cashAmount ?? 0) + (existing?.otherAmount ?? 0);
                   const expectedCash = expectedCashByDate.get(key) ?? null;
                   const discrepancy = cashDiscrepancyByDate.get(key) ?? null;
                   const dayEvents = eventsByDate.get(key) ?? [];
@@ -188,10 +193,9 @@ export default async function SalesPage({
                         <span>
                           {day.getUTCDate()}（{WEEKDAY_LABEL_JA[weekday]}）
                         </span>
-                        <span style={{ color: "#888", fontWeight: "normal" }}>売上合計 {yen(total)}</span>
                       </div>
 
-                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                         <label style={{ fontSize: "0.8rem" }}>
                           現金売上
                           <input type="number" name={`cash_${key}`} min={0} defaultValue={existing?.cashAmount ?? 0} style={fieldStyle} />
@@ -200,11 +204,12 @@ export default async function SalesPage({
                           CL売上
                           <input type="number" name={`other_${key}`} min={0} defaultValue={existing?.otherAmount ?? 0} style={fieldStyle} />
                         </label>
-                        <label style={{ fontSize: "0.8rem" }}>
-                          トークン
-                          <input type="number" name={`token_${key}`} min={0} defaultValue={existing?.tokenAmount ?? 0} style={fieldStyle} />
-                        </label>
                       </div>
+                      <div style={{ fontSize: "0.8rem", color: "#555", marginTop: "0.5rem" }}>売上合計: {yen(total)}</div>
+                      <label style={{ fontSize: "0.8rem", display: "block", marginTop: "0.5rem" }}>
+                        トークン
+                        <input type="number" name={`token_${key}`} min={0} defaultValue={existing?.tokenAmount ?? 0} style={fieldStyle} />
+                      </label>
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                         <label style={{ fontSize: "0.8rem" }}>
@@ -277,8 +282,8 @@ export default async function SalesPage({
               <div style={{ marginTop: "0.75rem", padding: "0.75rem", background: "#f5f5f5", borderRadius: 8 }}>
                 <div>現金売上合計: {yen(totals.cash)}</div>
                 <div>CL売上合計: {yen(totals.other)}</div>
-                <div>トークン合計: {yen(totals.token)}</div>
                 <div style={{ fontWeight: "bold" }}>売上総合計: {yen(grandTotal)}</div>
+                <div>トークン合計: {num(totals.token)}</div>
                 <div style={{ marginTop: "0.4rem" }}>振込財布へ合計: {yen(totals.transferWallet)}</div>
                 <div>買出財布へ合計: {yen(totals.purchaseWallet)}</div>
               </div>
@@ -299,7 +304,7 @@ export default async function SalesPage({
                 </p>
               )}
               {sales.map((s) => {
-                const total = s.cashAmount + s.otherAmount + s.tokenAmount;
+                const total = s.cashAmount + s.otherAmount;
                 return (
                   <div key={s.id} style={{ border: "1px solid #ddd", borderRadius: 8, padding: "0.75rem" }}>
                     <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold" }}>
@@ -310,7 +315,7 @@ export default async function SalesPage({
                       <span>{yen(total)}</span>
                     </div>
                     <div style={{ fontSize: "0.85rem", color: "#666", marginTop: "0.25rem" }}>
-                      現金売上 {yen(s.cashAmount)} / CL売上 {yen(s.otherAmount)} / トークン {yen(s.tokenAmount)}
+                      現金売上 {yen(s.cashAmount)} / CL売上 {yen(s.otherAmount)} / トークン {num(s.tokenAmount)}
                     </div>
                     {s.note && <div style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>{s.note}</div>}
                     {canWrite && (
@@ -326,8 +331,8 @@ export default async function SalesPage({
                 <div style={{ padding: "0.75rem", background: "#f5f5f5", borderRadius: 8 }}>
                   <div>現金売上合計: {yen(totals.cash)}</div>
                   <div>CL売上合計: {yen(totals.other)}</div>
-                  <div>トークン合計: {yen(totals.token)}</div>
                   <div style={{ fontWeight: "bold" }}>売上総合計: {yen(grandTotal)}</div>
+                  <div>トークン合計: {num(totals.token)}</div>
                 </div>
               )}
             </div>
@@ -370,8 +375,8 @@ export default async function SalesPage({
                     <th style={thStyle}>シフト</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>現金売上</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>CL売上</th>
-                    <th style={{ ...thStyle, textAlign: "right" }}>トークン</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>売上合計</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>トークン</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>振込財布へ</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>買出財布へ</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>実際現金有高</th>
@@ -407,7 +412,7 @@ export default async function SalesPage({
                   {days.map((day) => {
                     const key = formatDate(day);
                     const existing = salesByDate.get(key);
-                    const total = (existing?.cashAmount ?? 0) + (existing?.otherAmount ?? 0) + (existing?.tokenAmount ?? 0);
+                    const total = (existing?.cashAmount ?? 0) + (existing?.otherAmount ?? 0);
                     const expectedCash = expectedCashByDate.get(key) ?? null;
                     const discrepancy = cashDiscrepancyByDate.get(key) ?? null;
                     const dayEvents = eventsByDate.get(key) ?? [];
@@ -465,6 +470,7 @@ export default async function SalesPage({
                             style={{ width: "100%", textAlign: "right" }}
                           />
                         </td>
+                        <td style={{ ...tdStyle, textAlign: "right", color: "#888" }}>{yen(total)}</td>
                         <td style={tdStyle}>
                           <input
                             type="number"
@@ -474,7 +480,6 @@ export default async function SalesPage({
                             style={{ width: "100%", textAlign: "right" }}
                           />
                         </td>
-                        <td style={{ ...tdStyle, textAlign: "right", color: "#888" }}>{yen(total)}</td>
                         <td style={tdStyle}>
                           <input
                             type="number"
@@ -526,8 +531,8 @@ export default async function SalesPage({
                     <td style={tdStyle} />
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.cash)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.other)}</td>
-                    <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.token)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(grandTotal)}</td>
+                    <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{num(totals.token)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.transferWallet)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.purchaseWallet)}</td>
                     <td style={tdStyle} />
@@ -554,8 +559,8 @@ export default async function SalesPage({
                 {showStoreName && <th style={thStyle}>店舗</th>}
                 <th style={{ ...thStyle, textAlign: "right" }}>現金売上</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>CL売上</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>トークン</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>売上合計</th>
+                <th style={{ ...thStyle, textAlign: "right" }}>トークン</th>
                 <th style={thStyle}>メモ</th>
                 {canWrite && <th style={thStyle} />}
               </tr>
@@ -569,15 +574,15 @@ export default async function SalesPage({
                 </tr>
               )}
               {sales.map((s) => {
-                const total = s.cashAmount + s.otherAmount + s.tokenAmount;
+                const total = s.cashAmount + s.otherAmount;
                 return (
                   <tr key={s.id}>
                     <td style={tdStyle}>{formatDate(s.date)}</td>
                     {showStoreName && <td style={tdStyle}>{s.store.name}</td>}
                     <td style={{ ...tdStyle, textAlign: "right" }}>{yen(s.cashAmount)}</td>
                     <td style={{ ...tdStyle, textAlign: "right" }}>{yen(s.otherAmount)}</td>
-                    <td style={{ ...tdStyle, textAlign: "right" }}>{yen(s.tokenAmount)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(total)}</td>
+                    <td style={{ ...tdStyle, textAlign: "right" }}>{num(s.tokenAmount)}</td>
                     <td style={tdStyle}>{s.note}</td>
                     {canWrite && (
                       <td style={tdStyle}>
@@ -599,8 +604,8 @@ export default async function SalesPage({
                   </td>
                   <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.cash)}</td>
                   <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.other)}</td>
-                  <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.token)}</td>
                   <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(grandTotal)}</td>
+                  <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{num(totals.token)}</td>
                   <td style={tdStyle} />
                   {canWrite && <td style={tdStyle} />}
                 </tr>
