@@ -158,7 +158,11 @@ export default async function SalesPage({
               <input type="hidden" name="storeId" value={storeIds[0]} />
               <input type="hidden" name="dates" value={days.map((d) => formatDate(d)).join(",")} />
 
-              <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem" }}>
+              <div style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#555" }}>
+                開始時点（前月末の実際現金有高）: {priorDaySales?.actualCashAmount != null ? yen(priorDaySales.actualCashAmount) : "-"}
+              </div>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginTop: "0.75rem" }}>
                 {days.map((day) => {
                   const key = formatDate(day);
                   const existing = salesByDate.get(key);
@@ -174,22 +178,22 @@ export default async function SalesPage({
                     <div key={key} style={{ border: "1px solid #ddd", borderRadius: 8, padding: "0.75rem" }}>
                       <div style={{ display: "flex", justifyContent: "space-between", fontWeight: "bold", color: dateColor }}>
                         <span>
-                          {day.getUTCDate()}日（{WEEKDAY_LABEL_JA[weekday]}）
+                          {day.getUTCDate()}（{WEEKDAY_LABEL_JA[weekday]}）
                         </span>
                         <span style={{ color: "#888", fontWeight: "normal" }}>売上合計 {yen(total)}</span>
                       </div>
 
                       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
                         <label style={{ fontSize: "0.8rem" }}>
-                          現金
+                          現金売上
                           <input type="number" name={`cash_${key}`} min={0} defaultValue={existing?.cashAmount ?? 0} style={fieldStyle} />
                         </label>
                         <label style={{ fontSize: "0.8rem" }}>
-                          その他
+                          CL売上
                           <input type="number" name={`other_${key}`} min={0} defaultValue={existing?.otherAmount ?? 0} style={fieldStyle} />
                         </label>
                         <label style={{ fontSize: "0.8rem" }}>
-                          トークン売上
+                          トークン
                           <input type="number" name={`token_${key}`} min={0} defaultValue={existing?.tokenAmount ?? 0} style={fieldStyle} />
                         </label>
                       </div>
@@ -263,9 +267,9 @@ export default async function SalesPage({
               </div>
 
               <div style={{ marginTop: "0.75rem", padding: "0.75rem", background: "#f5f5f5", borderRadius: 8 }}>
-                <div>現金合計: {yen(totals.cash)}</div>
-                <div>その他合計: {yen(totals.other)}</div>
-                <div>トークン売上合計: {yen(totals.token)}</div>
+                <div>現金売上合計: {yen(totals.cash)}</div>
+                <div>CL売上合計: {yen(totals.other)}</div>
+                <div>トークン合計: {yen(totals.token)}</div>
                 <div style={{ fontWeight: "bold" }}>売上総合計: {yen(grandTotal)}</div>
                 <div style={{ marginTop: "0.4rem" }}>振込財布へ合計: {yen(totals.transferWallet)}</div>
                 <div>買出財布へ合計: {yen(totals.purchaseWallet)}</div>
@@ -298,7 +302,7 @@ export default async function SalesPage({
                       <span>{yen(total)}</span>
                     </div>
                     <div style={{ fontSize: "0.85rem", color: "#666", marginTop: "0.25rem" }}>
-                      現金 {yen(s.cashAmount)} / その他 {yen(s.otherAmount)} / トークン売上 {yen(s.tokenAmount)}
+                      現金売上 {yen(s.cashAmount)} / CL売上 {yen(s.otherAmount)} / トークン {yen(s.tokenAmount)}
                     </div>
                     {s.note && <div style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>{s.note}</div>}
                     {canWrite && (
@@ -312,9 +316,9 @@ export default async function SalesPage({
               })}
               {sales.length > 0 && (
                 <div style={{ padding: "0.75rem", background: "#f5f5f5", borderRadius: 8 }}>
-                  <div>現金合計: {yen(totals.cash)}</div>
-                  <div>その他合計: {yen(totals.other)}</div>
-                  <div>トークン売上合計: {yen(totals.token)}</div>
+                  <div>現金売上合計: {yen(totals.cash)}</div>
+                  <div>CL売上合計: {yen(totals.other)}</div>
+                  <div>トークン合計: {yen(totals.token)}</div>
                   <div style={{ fontWeight: "bold" }}>売上総合計: {yen(grandTotal)}</div>
                 </div>
               )}
@@ -353,9 +357,11 @@ export default async function SalesPage({
                 <thead>
                   <tr>
                     <th style={thStyle}>日付</th>
-                    <th style={{ ...thStyle, textAlign: "right" }}>現金</th>
-                    <th style={{ ...thStyle, textAlign: "right" }}>その他</th>
-                    <th style={{ ...thStyle, textAlign: "right" }}>トークン売上</th>
+                    <th style={thStyle}>イベント</th>
+                    <th style={thStyle}>シフト</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>現金売上</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>CL売上</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>トークン</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>売上合計</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>振込財布へ</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>買出財布へ</th>
@@ -363,11 +369,26 @@ export default async function SalesPage({
                     <th style={{ ...thStyle, textAlign: "right" }}>想定現金有高</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>現金誤差</th>
                     <th style={thStyle}>メモ</th>
-                    <th style={thStyle}>イベント</th>
-                    <th style={thStyle}>シフト</th>
                   </tr>
                 </thead>
                 <tbody>
+                  <tr style={{ background: "#f9f9f9", fontStyle: "italic" }}>
+                    <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>開始時点</td>
+                    <td style={tdStyle} />
+                    <td style={tdStyle} />
+                    <td style={tdStyle} />
+                    <td style={tdStyle} />
+                    <td style={tdStyle} />
+                    <td style={tdStyle} />
+                    <td style={tdStyle} />
+                    <td style={tdStyle} />
+                    <td style={{ ...tdStyle, textAlign: "right" }}>
+                      {priorDaySales?.actualCashAmount != null ? yen(priorDaySales.actualCashAmount) : "-"}
+                    </td>
+                    <td style={tdStyle} />
+                    <td style={tdStyle} />
+                    <td style={tdStyle} />
+                  </tr>
                   {days.map((day) => {
                     const key = formatDate(day);
                     const existing = salesByDate.get(key);
@@ -379,7 +400,37 @@ export default async function SalesPage({
                     return (
                       <tr key={key}>
                         <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>
-                          {day.getUTCDate()}日（{WEEKDAY_LABEL_JA[day.getUTCDay()]}）
+                          {day.getUTCDate()}（{WEEKDAY_LABEL_JA[day.getUTCDay()]}）
+                        </td>
+                        <td style={{ ...tdStyle, minWidth: 140 }}>
+                          {dayEvents.length === 0 ? (
+                            <span style={{ color: "#bbb" }}>-</span>
+                          ) : (
+                            dayEvents.map((event) => (
+                              <div
+                                key={event.id}
+                                style={{ fontSize: "0.85rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                                title={event.name}
+                              >
+                                📅 {event.name}
+                              </div>
+                            ))
+                          )}
+                        </td>
+                        <td style={{ ...tdStyle, minWidth: 140 }}>
+                          {dayShifts.length === 0 ? (
+                            <span style={{ color: "#bbb" }}>-</span>
+                          ) : (
+                            dayShifts.map((shift) => (
+                              <div
+                                key={shift.id}
+                                style={{ fontSize: "0.85rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                                title={`${shift.staff.name} ${shift.startTime}-${shift.endTime}`}
+                              >
+                                {shift.startTime} {shift.staff.name}
+                              </div>
+                            ))
+                          )}
                         </td>
                         <td style={tdStyle}>
                           <input
@@ -449,36 +500,6 @@ export default async function SalesPage({
                         <td style={tdStyle}>
                           <input type="text" name={`note_${key}`} defaultValue={existing?.note ?? ""} style={{ width: "100%" }} />
                         </td>
-                        <td style={{ ...tdStyle, minWidth: 140 }}>
-                          {dayEvents.length === 0 ? (
-                            <span style={{ color: "#bbb" }}>-</span>
-                          ) : (
-                            dayEvents.map((event) => (
-                              <div
-                                key={event.id}
-                                style={{ fontSize: "0.85rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                                title={event.name}
-                              >
-                                📅 {event.name}
-                              </div>
-                            ))
-                          )}
-                        </td>
-                        <td style={{ ...tdStyle, minWidth: 140 }}>
-                          {dayShifts.length === 0 ? (
-                            <span style={{ color: "#bbb" }}>-</span>
-                          ) : (
-                            dayShifts.map((shift) => (
-                              <div
-                                key={shift.id}
-                                style={{ fontSize: "0.85rem", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
-                                title={`${shift.staff.name} ${shift.startTime}-${shift.endTime}`}
-                              >
-                                {shift.startTime} {shift.staff.name}
-                              </div>
-                            ))
-                          )}
-                        </td>
                       </tr>
                     );
                   })}
@@ -486,14 +507,14 @@ export default async function SalesPage({
                 <tfoot>
                   <tr>
                     <td style={{ ...tdStyle, fontWeight: "bold" }}>合計</td>
+                    <td style={tdStyle} />
+                    <td style={tdStyle} />
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.cash)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.other)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.token)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(grandTotal)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.transferWallet)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.purchaseWallet)}</td>
-                    <td style={tdStyle} />
-                    <td style={tdStyle} />
                     <td style={tdStyle} />
                     <td style={tdStyle} />
                     <td style={tdStyle} />
@@ -516,9 +537,9 @@ export default async function SalesPage({
               <tr>
                 <th style={thStyle}>日付</th>
                 {showStoreName && <th style={thStyle}>店舗</th>}
-                <th style={{ ...thStyle, textAlign: "right" }}>現金</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>その他</th>
-                <th style={{ ...thStyle, textAlign: "right" }}>トークン売上</th>
+                <th style={{ ...thStyle, textAlign: "right" }}>現金売上</th>
+                <th style={{ ...thStyle, textAlign: "right" }}>CL売上</th>
+                <th style={{ ...thStyle, textAlign: "right" }}>トークン</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>売上合計</th>
                 <th style={thStyle}>メモ</th>
                 {canWrite && <th style={thStyle} />}
