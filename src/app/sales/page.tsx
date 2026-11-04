@@ -104,7 +104,7 @@ export default async function SalesPage({
   const salesByDate = new Map(sales.map((s) => [formatDate(s.date), s]));
 
   // 想定現金有高・現金誤差を日付順に連鎖計算する。
-  // 本日の想定現金有高 = 前日の実際現金有高 - 本日の(現金売上+振込財布へ+買出財布へ)
+  // 本日の想定現金有高 = 前日の実際現金有高（1日は前月繰越の実際現金有高） + 本日の現金売上 - 振込財布へ - 買出財布へ
   const expectedCashByDate = new Map<string, number | null>();
   const cashDiscrepancyByDate = new Map<string, number | null>();
   let prevActualCash: number | null = priorDaySales?.actualCashAmount ?? null;
@@ -113,7 +113,7 @@ export default async function SalesPage({
     const existing = salesByDate.get(key);
     const expectedCash =
       prevActualCash != null
-        ? prevActualCash - (existing?.cashAmount ?? 0) - (existing?.transferWalletAmount ?? 0) - (existing?.purchaseWalletAmount ?? 0)
+        ? prevActualCash + (existing?.cashAmount ?? 0) - (existing?.transferWalletAmount ?? 0) - (existing?.purchaseWalletAmount ?? 0)
         : null;
     const discrepancy = existing?.actualCashAmount != null && expectedCash != null ? existing.actualCashAmount - expectedCash : null;
     expectedCashByDate.set(key, expectedCash);
@@ -165,7 +165,7 @@ export default async function SalesPage({
               <input type="hidden" name="startingDate" value={formatDate(addDays(firstOfMonth, -1))} />
 
               <label style={{ display: "block", marginTop: "0.75rem", fontSize: "0.85rem", color: "#555" }}>
-                開始時点（前月末の実際現金有高）
+                前月繰越（前月末の実際現金有高）
                 <input
                   type="number"
                   name="startingCash"
@@ -290,7 +290,7 @@ export default async function SalesPage({
 
               <p style={{ fontSize: "0.8rem", color: "#666", marginTop: "0.5rem" }}>
                 金額・メモをすべて空（0・未入力）にして保存すると、その日のデータは削除されます。
-                想定現金有高 = 前日の実際現金有高 − 本日の(現金売上+振込財布へ+買出財布へ)。前日分が未入力の月は計算できません。
+                想定現金有高 = 前日の実際現金有高（1日は前月繰越） + 本日の現金売上 − 振込財布へ − 買出財布へ。前日分が未入力の月は計算できません。
               </p>
               <button type="submit" style={{ marginTop: "0.5rem", width: "100%", padding: "0.6rem" }}>
                 まとめて保存
@@ -387,7 +387,7 @@ export default async function SalesPage({
                 </thead>
                 <tbody>
                   <tr style={{ background: "#f9f9f9", fontStyle: "italic" }}>
-                    <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>開始時点</td>
+                    <td style={{ ...tdStyle, whiteSpace: "nowrap" }}>前月繰越</td>
                     <td style={tdStyle} />
                     <td style={tdStyle} />
                     <td style={tdStyle} />
@@ -545,7 +545,7 @@ export default async function SalesPage({
             </div>
             <p style={{ fontSize: "0.85rem", color: "#666", marginTop: "0.5rem" }}>
               金額・メモをすべて空（0・未入力）にして保存すると、その日のデータは削除されます。「売上合計」「想定現金有高」「現金誤差」列は前回保存時点の値です。
-              想定現金有高 = 前日の実際現金有高 − 本日の(現金売上+振込財布へ+買出財布へ)。前日分が未入力の場合は計算できません。
+              想定現金有高 = 前日の実際現金有高（1日は前月繰越） + 本日の現金売上 − 振込財布へ − 買出財布へ。前日分が未入力の場合は計算できません。
             </p>
             <button type="submit" style={{ marginTop: "0.5rem" }}>
               まとめて保存
