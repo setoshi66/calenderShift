@@ -70,6 +70,22 @@ export async function bulkUpsertSales(formData: FormData) {
     });
   });
 
+  // 開始時点（前月末日）の実際現金有高。他の項目には触れず、この1項目のみを安全に更新する。
+  const startingDateStr = String(formData.get("startingDate") ?? "");
+  if (startingDateStr) {
+    const startingCash = parseNullableAmount(formData.get("startingCash"));
+    if (startingCash !== null) {
+      const startingDate = new Date(startingDateStr);
+      ops.push(
+        prisma.dailySales.upsert({
+          where: { storeId_date: { storeId, date: startingDate } },
+          create: { storeId, date: startingDate, actualCashAmount: startingCash, createdById: session.user.id },
+          update: { actualCashAmount: startingCash },
+        }),
+      );
+    }
+  }
+
   await prisma.$transaction(ops);
 
   revalidatePath("/sales");

@@ -157,10 +157,18 @@ export default async function SalesPage({
             <form action={bulkUpsertSales} style={{ marginTop: "1rem" }}>
               <input type="hidden" name="storeId" value={storeIds[0]} />
               <input type="hidden" name="dates" value={days.map((d) => formatDate(d)).join(",")} />
+              <input type="hidden" name="startingDate" value={formatDate(addDays(firstOfMonth, -1))} />
 
-              <div style={{ marginTop: "0.75rem", fontSize: "0.85rem", color: "#555" }}>
-                開始時点（前月末の実際現金有高）: {priorDaySales?.actualCashAmount != null ? yen(priorDaySales.actualCashAmount) : "-"}
-              </div>
+              <label style={{ display: "block", marginTop: "0.75rem", fontSize: "0.85rem", color: "#555" }}>
+                開始時点（前月末の実際現金有高）
+                <input
+                  type="number"
+                  name="startingCash"
+                  min={0}
+                  defaultValue={priorDaySales?.actualCashAmount ?? ""}
+                  style={{ width: "100%", padding: "0.4rem" }}
+                />
+              </label>
 
               <div style={{ display: "flex", flexDirection: "column", gap: "0.6rem", marginTop: "0.75rem" }}>
                 {days.map((day) => {
@@ -352,6 +360,7 @@ export default async function SalesPage({
           <form action={bulkUpsertSales} style={{ marginTop: "1.5rem" }}>
             <input type="hidden" name="storeId" value={storeIds[0]} />
             <input type="hidden" name="dates" value={days.map((d) => formatDate(d)).join(",")} />
+            <input type="hidden" name="startingDate" value={formatDate(addDays(firstOfMonth, -1))} />
             <div style={{ overflowX: "auto" }}>
               <table style={{ width: "100%", borderCollapse: "collapse", whiteSpace: "nowrap" }}>
                 <thead>
@@ -382,8 +391,14 @@ export default async function SalesPage({
                     <td style={tdStyle} />
                     <td style={tdStyle} />
                     <td style={tdStyle} />
-                    <td style={{ ...tdStyle, textAlign: "right" }}>
-                      {priorDaySales?.actualCashAmount != null ? yen(priorDaySales.actualCashAmount) : "-"}
+                    <td style={tdStyle}>
+                      <input
+                        type="number"
+                        name="startingCash"
+                        min={0}
+                        defaultValue={priorDaySales?.actualCashAmount ?? ""}
+                        style={{ width: "100%", textAlign: "right" }}
+                      />
                     </td>
                     <td style={tdStyle} />
                     <td style={tdStyle} />
