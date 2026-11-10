@@ -88,9 +88,11 @@ export default async function SalesPage({
       acc.token += s.tokenAmount;
       acc.transferWallet += s.transferWalletAmount;
       acc.purchaseWallet += s.purchaseWalletAmount;
+      acc.customerCount += s.customerCount;
+      acc.newCustomerCount += s.newCustomerCount;
       return acc;
     },
-    { cash: 0, other: 0, token: 0, transferWallet: 0, purchaseWallet: 0 },
+    { cash: 0, other: 0, token: 0, transferWallet: 0, purchaseWallet: 0, customerCount: 0, newCustomerCount: 0 },
   );
   const grandTotal = totals.cash + totals.other;
 
@@ -257,6 +259,29 @@ export default async function SalesPage({
                         </div>
                       </div>
 
+                      <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "0.5rem", marginTop: "0.5rem" }}>
+                        <label style={{ fontSize: "0.8rem" }}>
+                          客数
+                          <input
+                            type="number"
+                            name={`customerCount_${key}`}
+                            min={0}
+                            defaultValue={existing?.customerCount ?? 0}
+                            style={fieldStyle}
+                          />
+                        </label>
+                        <label style={{ fontSize: "0.8rem" }}>
+                          新規客数
+                          <input
+                            type="number"
+                            name={`newCustomerCount_${key}`}
+                            min={0}
+                            defaultValue={existing?.newCustomerCount ?? 0}
+                            style={fieldStyle}
+                          />
+                        </label>
+                      </div>
+
                       <label style={{ fontSize: "0.8rem", display: "block", marginTop: "0.5rem" }}>
                         メモ
                         <input type="text" name={`note_${key}`} defaultValue={existing?.note ?? ""} style={fieldStyle} />
@@ -286,6 +311,8 @@ export default async function SalesPage({
                 <div>トークン合計: {num(totals.token)}</div>
                 <div style={{ marginTop: "0.4rem" }}>振込財布へ合計: {yen(totals.transferWallet)}</div>
                 <div>買出財布へ合計: {yen(totals.purchaseWallet)}</div>
+                <div style={{ marginTop: "0.4rem" }}>客数合計: {num(totals.customerCount)}</div>
+                <div>新規客数合計: {num(totals.newCustomerCount)}</div>
               </div>
 
               <p style={{ fontSize: "0.8rem", color: "#666", marginTop: "0.5rem" }}>
@@ -317,6 +344,9 @@ export default async function SalesPage({
                     <div style={{ fontSize: "0.85rem", color: "#666", marginTop: "0.25rem" }}>
                       現金売上 {yen(s.cashAmount)} / CL売上 {yen(s.otherAmount)} / トークン {num(s.tokenAmount)}
                     </div>
+                    <div style={{ fontSize: "0.85rem", color: "#666", marginTop: "0.1rem" }}>
+                      客数 {num(s.customerCount)} / 新規客数 {num(s.newCustomerCount)}
+                    </div>
                     {s.note && <div style={{ fontSize: "0.85rem", marginTop: "0.25rem" }}>{s.note}</div>}
                     {canWrite && (
                       <form action={deleteSales} style={{ marginTop: "0.5rem" }}>
@@ -333,6 +363,8 @@ export default async function SalesPage({
                   <div>CL売上合計: {yen(totals.other)}</div>
                   <div style={{ fontWeight: "bold" }}>売上総合計: {yen(grandTotal)}</div>
                   <div>トークン合計: {num(totals.token)}</div>
+                  <div style={{ marginTop: "0.4rem" }}>客数合計: {num(totals.customerCount)}</div>
+                  <div>新規客数合計: {num(totals.newCustomerCount)}</div>
                 </div>
               )}
             </div>
@@ -382,6 +414,8 @@ export default async function SalesPage({
                     <th style={{ ...thStyle, textAlign: "right" }}>実際現金有高</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>想定現金有高</th>
                     <th style={{ ...thStyle, textAlign: "right" }}>現金誤差</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>客数</th>
+                    <th style={{ ...thStyle, textAlign: "right" }}>新規客数</th>
                     <th style={thStyle}>メモ</th>
                   </tr>
                 </thead>
@@ -405,6 +439,8 @@ export default async function SalesPage({
                         style={{ width: "100%", textAlign: "right" }}
                       />
                     </td>
+                    <td style={tdStyle} />
+                    <td style={tdStyle} />
                     <td style={tdStyle} />
                     <td style={tdStyle} />
                     <td style={tdStyle} />
@@ -518,6 +554,24 @@ export default async function SalesPage({
                           {discrepancy != null ? yen(discrepancy) : "-"}
                         </td>
                         <td style={tdStyle}>
+                          <input
+                            type="number"
+                            name={`customerCount_${key}`}
+                            min={0}
+                            defaultValue={existing?.customerCount ?? 0}
+                            style={{ width: "100%", textAlign: "right" }}
+                          />
+                        </td>
+                        <td style={tdStyle}>
+                          <input
+                            type="number"
+                            name={`newCustomerCount_${key}`}
+                            min={0}
+                            defaultValue={existing?.newCustomerCount ?? 0}
+                            style={{ width: "100%", textAlign: "right" }}
+                          />
+                        </td>
+                        <td style={tdStyle}>
                           <input type="text" name={`note_${key}`} defaultValue={existing?.note ?? ""} style={{ width: "100%" }} />
                         </td>
                       </tr>
@@ -538,6 +592,8 @@ export default async function SalesPage({
                     <td style={tdStyle} />
                     <td style={tdStyle} />
                     <td style={tdStyle} />
+                    <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{num(totals.customerCount)}</td>
+                    <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{num(totals.newCustomerCount)}</td>
                     <td style={tdStyle} />
                   </tr>
                 </tfoot>
@@ -561,6 +617,8 @@ export default async function SalesPage({
                 <th style={{ ...thStyle, textAlign: "right" }}>CL売上</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>売上合計</th>
                 <th style={{ ...thStyle, textAlign: "right" }}>トークン</th>
+                <th style={{ ...thStyle, textAlign: "right" }}>客数</th>
+                <th style={{ ...thStyle, textAlign: "right" }}>新規客数</th>
                 <th style={thStyle}>メモ</th>
                 {canWrite && <th style={thStyle} />}
               </tr>
@@ -568,7 +626,7 @@ export default async function SalesPage({
             <tbody>
               {sales.length === 0 && (
                 <tr>
-                  <td colSpan={showStoreName ? 8 : 7} style={{ ...tdStyle, color: "#888" }}>
+                  <td colSpan={showStoreName ? 10 : 9} style={{ ...tdStyle, color: "#888" }}>
                     売上データはありません。1店舗のみを選択するとExcel風の一括入力ができます。
                   </td>
                 </tr>
@@ -583,6 +641,8 @@ export default async function SalesPage({
                     <td style={{ ...tdStyle, textAlign: "right" }}>{yen(s.otherAmount)}</td>
                     <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(total)}</td>
                     <td style={{ ...tdStyle, textAlign: "right" }}>{num(s.tokenAmount)}</td>
+                    <td style={{ ...tdStyle, textAlign: "right" }}>{num(s.customerCount)}</td>
+                    <td style={{ ...tdStyle, textAlign: "right" }}>{num(s.newCustomerCount)}</td>
                     <td style={tdStyle}>{s.note}</td>
                     {canWrite && (
                       <td style={tdStyle}>
@@ -606,6 +666,8 @@ export default async function SalesPage({
                   <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(totals.other)}</td>
                   <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{yen(grandTotal)}</td>
                   <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{num(totals.token)}</td>
+                  <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{num(totals.customerCount)}</td>
+                  <td style={{ ...tdStyle, textAlign: "right", fontWeight: "bold" }}>{num(totals.newCustomerCount)}</td>
                   <td style={tdStyle} />
                   {canWrite && <td style={tdStyle} />}
                 </tr>

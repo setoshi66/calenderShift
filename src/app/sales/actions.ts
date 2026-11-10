@@ -38,6 +38,8 @@ export async function bulkUpsertSales(formData: FormData) {
     const transferWalletAmount = parseAmount(formData.get(`transferWallet_${dateStr}`));
     const purchaseWalletAmount = parseAmount(formData.get(`purchaseWallet_${dateStr}`));
     const actualCashAmount = parseNullableAmount(formData.get(`actualCash_${dateStr}`));
+    const customerCount = parseAmount(formData.get(`customerCount_${dateStr}`));
+    const newCustomerCount = parseAmount(formData.get(`newCustomerCount_${dateStr}`));
     const note = String(formData.get(`note_${dateStr}`) ?? "").trim() || null;
     const date = new Date(dateStr);
     const isEmpty =
@@ -47,6 +49,8 @@ export async function bulkUpsertSales(formData: FormData) {
       transferWalletAmount === 0 &&
       purchaseWalletAmount === 0 &&
       actualCashAmount === null &&
+      customerCount === 0 &&
+      newCustomerCount === 0 &&
       !note;
 
     if (isEmpty) {
@@ -63,10 +67,22 @@ export async function bulkUpsertSales(formData: FormData) {
         transferWalletAmount,
         purchaseWalletAmount,
         actualCashAmount,
+        customerCount,
+        newCustomerCount,
         note,
         createdById: session.user.id,
       },
-      update: { cashAmount, otherAmount, tokenAmount, transferWalletAmount, purchaseWalletAmount, actualCashAmount, note },
+      update: {
+        cashAmount,
+        otherAmount,
+        tokenAmount,
+        transferWalletAmount,
+        purchaseWalletAmount,
+        actualCashAmount,
+        customerCount,
+        newCustomerCount,
+        note,
+      },
     });
   });
 

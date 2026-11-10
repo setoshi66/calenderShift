@@ -236,6 +236,8 @@ model DailySales {
   transferWalletAmount Int      @default(0) // 振込財布へ
   purchaseWalletAmount Int      @default(0) // 買出財布へ
   actualCashAmount     Int? // 実際現金有高（未入力はnull）
+  customerCount        Int      @default(0) // 客数
+  newCustomerCount     Int      @default(0) // 新規客数
   note                 String?
   createdById          String? // 登録した管理者のstaff id
   createdAt            DateTime @default(now())
