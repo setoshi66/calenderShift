@@ -11,6 +11,15 @@ export async function assertWriteAccess() {
   return session;
 }
 
+// 売上ページはスタッフも入力可能（店舗の実務上、現金や客数の記録はスタッフが行うため）。
+export async function assertSalesWriteAccess() {
+  const session = await auth();
+  if (!session?.user) {
+    throw new Error("この操作を行う権限がありません");
+  }
+  return session;
+}
+
 // 時給など管理者ロール限定の項目を扱うServer Actionsから使う版。
 export async function assertAdmin() {
   const session = await auth();

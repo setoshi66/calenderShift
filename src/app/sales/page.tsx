@@ -32,7 +32,7 @@ export default async function SalesPage({
 }) {
   const params = await searchParams;
   const session = await auth();
-  const canWrite = session?.user.role === "ADMIN" || session?.user.role === "STORE_MANAGER";
+  const canWrite = !!session?.user;
   const today = todayInJst();
   const viewMode = await getViewMode();
 

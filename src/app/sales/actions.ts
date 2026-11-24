@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { assertWriteAccess } from "@/lib/api-auth";
+import { assertSalesWriteAccess } from "@/lib/api-auth";
 
 function parseAmount(value: FormDataEntryValue | null): number {
   const n = Number(value ?? 0);
@@ -21,7 +21,7 @@ function parseNullableAmount(value: FormDataEntryValue | null): number | null {
 // Excel風グリッドからの一括保存。1店舗・複数日付分をまとめて登録/更新/削除する。
 // 各日の金額・メモがすべて空の場合はその日のレコードを削除する。
 export async function bulkUpsertSales(formData: FormData) {
-  const session = await assertWriteAccess();
+  const session = await assertSalesWriteAccess();
 
   const storeId = String(formData.get("storeId") ?? "");
   if (!storeId) throw new Error("店舗が未選択です");
@@ -108,7 +108,7 @@ export async function bulkUpsertSales(formData: FormData) {
 }
 
 export async function deleteSales(formData: FormData) {
-  await assertWriteAccess();
+  await assertSalesWriteAccess();
 
   const id = String(formData.get("id") ?? "");
   if (!id) throw new Error("パラメータが不正です");
