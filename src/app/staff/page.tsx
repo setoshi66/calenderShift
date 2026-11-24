@@ -34,7 +34,7 @@ export default async function StaffPage() {
           <thead>
             <tr>
               <th style={thStyle}>氏名</th>
-              <th style={thStyle}>メール</th>
+              {canWrite && <th style={thStyle}>メール</th>}
               <th style={thStyle}>ロール</th>
               <th style={thStyle}>所属店舗</th>
               {isAdmin && <th style={{ ...thStyle, textAlign: "right" }}>時給</th>}
@@ -47,7 +47,7 @@ export default async function StaffPage() {
             {staffList.map((staff) => (
               <tr key={staff.id}>
                 <td style={tdStyle}>{staff.name}</td>
-                <td style={tdStyle}>{staff.email}</td>
+                {canWrite && <td style={tdStyle}>{staff.email}</td>}
                 <td style={tdStyle}>{ROLE_LABEL[staff.role] ?? staff.role}</td>
                 <td style={tdStyle}>{staff.storeAssignments.map((a) => a.store.name).join(", ")}</td>
                 {isAdmin && (
